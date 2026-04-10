@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourcePerFileMappings">
+    <file url="file://$PROJECT_DIR$/src/main/resources/mapper/CommentMapper.xml" value="1351e80c-111e-4d94-96e9-8bcb8308a1ea" />
+  </component>
+</project>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wwj.Mapper.CommentMapper">
+<!--封装查询结果-->
+    <!--Mybatis-->
+   <!-- <resultMap id="BaseResultMap" type="com.wwj.Vo.AdminCommentVo">
+         <result column="userName" property="userName"/>
+         <result column="productName" property="productName"/>
+        &lt;!&ndash;嵌套Commnet对象&ndash;&gt;
+        <association property="comment" javaType="com.wwj.Pojo.Comment">
+            <id column="id" property="id"/>
+            <result column="user_id" property="userId"/>
+            <result column="product_id" property="productId"/>
+            <result column="content" property="content"/>
+            <result column="score" property="score"/>
+            <result column="order_id" property="orderId"/>
+            <result column="audit_status" property="auditStatus"/>
+            <result column="create_time" property="createTime"/>
+            <result column="update_time" property="updateTime"/>
+        </association>
+    </resultMap>-->
+
+    <!--MP封装-->
+    <resultMap id="BaseResultMap" type="com.wwj.Vo.AdminCommentVo" autoMapping="true"><!--autoMapping=ture 表示MP自动封装-->
+            <result column="userName" property="userName"/>
+            <result column="productName" property="productName"/>
+             <association property="comment" javaType="com.wwj.Pojo.Comment" autoMapping="true"/>
+    </resultMap>
+    <!--多表查询-->
+    <!--<select id="selectCommentList" resultMap="BaseResultMap">-->
+    <select id="selectCommentList" resultMap="BaseResultMap">
+      select c.* comment, u.username userName, p.book_name productName from comment c
+      left join user u on c.user_id = u.id
+      left join product p on c.product_id = p.id
+      <where>
+          1=1
+      <if test="commentQuery.ProductName != null and commentQuery.ProductName != ''">
+        and p.book_name like concat('%',#{commentQuery.ProductName},'%')
+      </if>
+      <if test="commentQuery.UserName != null and commentQuery.UserName != ''">
+        and u.username like concat('%',#{commentQuery.UserName},'%')
+      </if>
+      <if test="commentQuery.Score != null">
+          and c.score = #{commentQuery.Score}
+      </if>
+       <if test ="commentQuery.AuditStatus != null">
+        and c.audit_status = #{commentQuery.AuditStatus}
+      </if>
+      </where>
+       order by c.create_time desc
+    </select>
+</mapper>

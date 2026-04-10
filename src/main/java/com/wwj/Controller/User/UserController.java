@@ -1,0 +1,80 @@
+package com.wwj.Controller.User;
+
+import cn.hutool.core.bean.BeanUtil;
+import com.wwj.Constant.JwtClaimsConstant;
+import com.wwj.Dto.UserLoginDto;
+import com.wwj.Dto.UserRegisterDto;
+import com.wwj.Pojo.User;
+import com.wwj.Result.Result;
+import com.wwj.Service.UserService;
+import com.wwj.Utils.JwtUtil;
+import com.wwj.Vo.UserLoginVo;
+import com.wwj.Vo.UserRegisterVo;
+import com.wwj.context.BaseContext;
+import com.wwj.properties.JwtProperties;
+import io.swagger.annotations.Api;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/user/user")
+@Api(value = "用户管理")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+    @Autowired
+    private JwtProperties jwtProperties;
+
+    //生成发送验证码
+    @PostMapping("/code")
+    public Result<String> code(@RequestParam("phone") String phone) throws Exception {
+      return  userService.Sentcode(phone);
+
+    }
+
+
+  //用户登录
+    @PostMapping("/login")
+    public Result<UserLoginVo> login(@RequestBody UserLoginDto userLoginDto){
+        User user = userService.login(userLoginDto);
+        if (user == null){
+            return Result.error("登录失败，手机号或验证码错误");
+        }
+        //生成token
+        Map<String, Object> map =new  HashMap<>();
+        map.put(JwtClaimsConstant.USER_ID,user.getId());
+        String token = JwtUtil.createJWT(jwtProperties.getUserSecretKey(), jwtProperties.getUserTtl(), map);
+        UserLoginVo userLoginVo = UserLoginVo.builder()
+                .username(user.getUsername())
+                .avatar(user.getAvatar())
+                .token(token)
+                .build();
+        return Result.success(userLoginVo);
+    }
+    //用户注册
+    @PostMapping("/register")
+    public Result<UserRegisterVo> register(@RequestBody UserRegisterDto userRegisterDto){
+        UserRegisterVo userRegisterVo = userService.register(userRegisterDto);
+        return Result.success(userRegisterVo);
+    }
+
+
+    //修改用户信息
+    @PutMapping("/update")
+    public Result update(@RequestBody User user){
+        userService.updateUser((user));
+        return Result.success();
+    }
+
+    //查询回显
+    @GetMapping("/get")
+    public Result<User> get(){
+        Long userId = BaseContext.getCurrentId();
+        User user = userService.getById(userId);
+        return Result.success(user);
+    }
+}
