@@ -18,7 +18,7 @@ import java.util.List;
  * @since 2026-04-09
  */
 @RestController
-@RequestMapping("/shipping-rule")
+@RequestMapping("/admin/shipping-rule")
 public class ShippingRuleController {
     @Autowired
     private IShippingRuleService shippingRuleService;
@@ -48,7 +48,7 @@ public class ShippingRuleController {
 
     //根据id查询运费规则，进行查询回显
     @GetMapping("/getRule/{id}")
-    public Result<ShippingRule> getRule(@PathVariable Integer id) {
+    public Result<ShippingRule> getRule(@PathVariable Long id) {
         return Result.success(shippingRuleService.getById(id));
     }
     //删除运费规则

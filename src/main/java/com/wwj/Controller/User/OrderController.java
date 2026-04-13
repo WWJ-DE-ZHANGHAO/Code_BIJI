@@ -3,19 +3,22 @@ package com.wwj.Controller.User;
 
 import com.wwj.Dto.UserOrderPayment;
 import com.wwj.Dto.UserOrderSubmit;
+import com.wwj.Dto.UsersSaveShoppingCartDto;
+import com.wwj.Message.OrderRemindMessage;
 import com.wwj.Pojo.Order;
 import com.wwj.Pojo.OrderDetail;
 import com.wwj.Pojo.Product;
+import com.wwj.Pojo.Stock;
+import com.wwj.RedisQueue.RemindRedisQueue;
 import com.wwj.Result.Result;
-import com.wwj.Service.IOrderDetailService;
-import com.wwj.Service.IOrderService;
-import com.wwj.Service.IProductService;
+import com.wwj.Service.*;
 import com.wwj.Vo.UserOrderSubmitVo;
 import com.wwj.context.BaseContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -38,6 +41,18 @@ public class OrderController {
 
     @Autowired
     private IProductService productService;
+
+    @Autowired
+    private IStockService stockService;
+
+    @Autowired
+    private IShoppingCartService shoppingCartService;
+
+   @Autowired
+    private RemindRedisQueue remindRedisQueue;
+
+    @Autowired
+    private SimpMessagingTemplate messageTemplate;
     //用户下单
     @PostMapping("/submit")
     public Result<UserOrderSubmitVo> submit(@RequestBody UserOrderSubmit userOrderSubmit){
@@ -93,7 +108,15 @@ public class OrderController {
 
     //再来一单
     @PostMapping("/repetition/{id}")
-    public Result repetition(){
+    public Result repetition(@PathVariable String id){
+        Long userId = BaseContext.getCurrentId();
+        List<OrderDetail> list = orderDetailService.lambdaQuery().eq(OrderDetail::getOrderId, id).list();
+        for (OrderDetail orderDetail : list) {
+            Long productId = orderDetail.getProductId();
+            Integer quantity = orderDetail.getQuantity();
+            UsersSaveShoppingCartDto USSCD = new UsersSaveShoppingCartDto(productId, quantity);
+            shoppingCartService.Add(USSCD);
+        }
 
 
         return Result.success();
@@ -102,17 +125,70 @@ public class OrderController {
 
     //取消订单
     @PutMapping("/cancel/{id}")
-    public Result cancel(){
-
-
+    public Result cancel(@PathVariable String id){
+        orderService.lambdaUpdate()
+                .set(Order::getOrderStatus, 6)
+                .set(Order::getCancelReason, "用户取消订单")
+                .set(Order::getCancelTime, LocalDateTime.now())
+                .eq(Order::getId, id)
+                .update();
+        //取消订单后需要回滚销量库存
+        List<OrderDetail> list = orderDetailService.lambdaQuery().eq(OrderDetail::getOrderId, id).list();
+        for (OrderDetail orderDetail : list) {
+            Long productId = orderDetail.getProductId();
+            Product product = productService.getById(productId);
+            product.setSalesCount(product.getSalesCount() - orderDetail.getQuantity());
+            product.setStock(product.getStock() + orderDetail.getQuantity());
+            productService.updateById(product);
+            stockService.lambdaUpdate().eq(Stock::getProductId, productId)
+                    .set(Stock::getSaleStock, product.getStock())
+                    .update();
+        }
         return Result.success();
     }
 
-    //催发货
+    //催发货，使用WebSocket向商家发送消息，商家端接收消息后会弹出提示框，提示有订单需要发货
     @GetMapping("/remind/{id}")
-    public Result remind(){
+    public Result<String> remind(@PathVariable String id){
+        //创建消息
+        Long userId = BaseContext.getCurrentId();
+        OrderRemindMessage ORM = new OrderRemindMessage();
+        ORM.setOrderId( id);
+        ORM.setUserId(userId);
+        ORM.setContent("用户催发货，请尽快发货");
+        ORM.setCreateTime(LocalDateTime.now());
+        //将消息存入Redis队列
+        remindRedisQueue.push(ORM);
+        //WebSocket推送所有管理端
+        messageTemplate.convertAndSend("/topic/admin/order/remind", ORM);
 
 
+        return Result.success("催发货成功");
+    }
+
+
+    //申请退款
+    @PutMapping("/refund")
+    public Result refund(@RequestParam("id") String id ,@RequestParam("reason") String reason){
+        if (reason == null || reason.trim().isEmpty()){
+            return Result.error("请输入退款理由");
+        }
+        Order order = orderService.getById(id);
+        order.setOrderStatus(5);
+        order.setRefundStatus(1);
+        order.setRefundReason(reason);
+        orderService.updateById(order);
+        return Result.success();
+    }
+
+    //确认收货
+    @PutMapping("/receive/{id}")
+    public Result receive(@PathVariable String id){
+        Order order = orderService.getById(id);
+        order.setOrderStatus(4);
+        order.setDeliveryTime(LocalDateTime.now());
+        order.setCommentStatus(1);
+        orderService.updateById(order);
         return Result.success();
     }
 

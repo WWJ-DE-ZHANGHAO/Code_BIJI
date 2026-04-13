@@ -3,10 +3,12 @@ package com.wwj.Controller.admin;
 
 import com.wwj.Pojo.Comment;
 import com.wwj.Pojo.Product;
+import com.wwj.Pojo.Stock;
 import com.wwj.Query.ProductQuery;
 import com.wwj.Result.PageResult;
 import com.wwj.Result.Result;
 import com.wwj.Service.IProductService;
+import com.wwj.Service.IStockService;
 import io.swagger.annotations.Api;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +16,7 @@ import org.xml.sax.SAXException;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -30,6 +33,9 @@ import java.util.List;
 public class ProductController {
     @Autowired
     private IProductService productService;
+
+    @Autowired
+    private IStockService stockService;
 
     @GetMapping("/list")
     //复杂条件分页查询，点了重置按钮就会清空所有条件，会使用默认值
@@ -48,6 +54,14 @@ public class ProductController {
     @PostMapping("/add")
     public Result add(@RequestBody Product product) throws IOException, SAXException {
         productService.ADD(product);
+       Stock stock = new Stock();
+       stock.setProductId(product.getId());
+       stock.setStockNum(product.getStock());
+       stock.setSaleStock(product.getStock());
+       stock.setStockNum(product.getStock());
+       stock.setProductName(product.getBookName());
+       stock.setProductIamge(product.getCoverUrl());
+       stockService.save(stock);
         return Result.success();
     }
 
@@ -56,6 +70,14 @@ public class ProductController {
     @PutMapping("/update")
     public Result update(@RequestBody Product product){
         productService.Update(product);
+        stockService.lambdaUpdate().eq(Stock::getProductId,product.getId())
+                .set(Stock::getSaleStock,product.getStock())
+                .set(Stock::getStockNum,product.getStock())
+                .set(Stock::getProductName,product.getBookName())
+                .set(Stock::getProductIamge,product.getCoverUrl())
+                .set(Stock::getUpdateTime,LocalDateTime.now())
+                .update();
+
         return Result.success();
     }
 

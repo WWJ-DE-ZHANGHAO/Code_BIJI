@@ -41,28 +41,11 @@ public class ShoppingCartController {
     //添加购物车
     @PostMapping("/save")
     public Result save(@RequestBody UsersSaveShoppingCartDto usersSaveShoppingCartDto){
-        Long id = usersSaveShoppingCartDto.getProductId();
-        Integer number = usersSaveShoppingCartDto.getNumber();
-        //先判断该用户的购物车中是否有已经有该商品，有的话就是更新，没有的话就是添加
-        Long userId = BaseContext.getCurrentId();
-        ShoppingCart one = shoppingCartService.lambdaQuery().eq(ShoppingCart::getUserId, userId).eq(ShoppingCart::getProductId, id).one();
-        if (one!=null){
-            one.setNumber(one.getNumber()+number);
-            shoppingCartService.updateById(one);
-        }else {
-            ShoppingCart shoppingCart = new ShoppingCart();
-            shoppingCart.setUserId(userId);
-            shoppingCart.setProductId(id);
-            shoppingCart.setNumber(number);
-            shoppingCart.setProductName(productService.getById(id).getBookName());
-            shoppingCart.setProductImage(productService.getById(id).getCoverUrl());
-            shoppingCart.setPrice(productService.getById(id).getPrice());
-            shoppingCart.setProductDescription(productService.getById(id).getDescription());
-
-            shoppingCartService.save(shoppingCart);
-        }
+        shoppingCartService.Add(usersSaveShoppingCartDto);
         return Result.success();
     }
+
+
 
     //查询购物车
     @GetMapping("/list")

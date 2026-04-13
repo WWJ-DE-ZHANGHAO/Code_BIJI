@@ -7,5 +7,6 @@ import lombok.Data;
 public class AdminCommentVo {
     private String userName;
     private String productName;
+    private Long commentId;
     private Comment comment;
 }

@@ -21,16 +21,32 @@
     </resultMap>-->
 
     <!--MP封装-->
+    <resultMap id="CommentResultMap" type="com.wwj.Pojo.Comment" autoMapping="true">
+            <id column="id" property="id"/>
+            <result column="product_id" property="productId"/>
+            <result column="order_id" property="orderId"/>
+            <result column="user_id" property="userId"/>
+            <result column="score" property="score"/>
+            <result column="content" property="content"/>
+            <result column="audit_status" property="auditStatus"/>
+            <result column="reply_content" property="replyContent"/>
+            <result column="reply_time" property="replyTime"/>
+            <result column="create_time" property="createTime"/>
+            <result column="update_time" property="updateTime"/>
+            <result column="images" property="images" typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
+    </resultMap>
+
     <resultMap id="BaseResultMap" type="com.wwj.Vo.AdminCommentVo" autoMapping="true"><!--autoMapping=ture 表示MP自动封装-->
+            <id column="commentId" property="commentId"/>
             <result column="userName" property="userName"/>
             <result column="productName" property="productName"/>
-             <association property="comment" javaType="com.wwj.Pojo.Comment" autoMapping="true"/>
+             <association property="comment" resultMap="CommentResultMap"/>
     </resultMap>
     <!--多表查询-->
     <!--<select id="selectCommentList" resultMap="BaseResultMap">-->
     <select id="selectCommentList" resultMap="BaseResultMap">
-      select c.* comment, u.username userName, p.book_name productName from comment c
-      left join user u on c.user_id = u.id
+      select c.id as commentId, c.* , u.username userName, p.book_name productName from `comment` c
+      left join `user` u on c.user_id = u.id
       left join product p on c.product_id = p.id
       <where>
           1=1

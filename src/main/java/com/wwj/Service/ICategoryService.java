@@ -2,6 +2,9 @@ package com.wwj.Service;
 
 import com.wwj.Pojo.Category;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.wwj.Vo.CategorySalesVo;
+
+import java.util.List;
 
 /**
  * <p>
@@ -13,4 +16,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface ICategoryService extends IService<Category> {
 
+    List<CategorySalesVo> Sales();
 }

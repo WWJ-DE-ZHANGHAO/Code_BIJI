@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor(staticName = "of")
 @NoArgsConstructor
-@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class RegionRule {
     private String provinceName;
     private String cityName;

@@ -11,6 +11,7 @@ import com.wwj.Query.OrderQuery;
 import com.wwj.Result.PageResult;
 import com.wwj.Service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.wwj.Vo.AdminOrderVo;
 import com.wwj.Vo.UserOrderSubmitVo;
 import com.wwj.context.BaseContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,15 +47,22 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
      @Autowired
      private IShippingRuleService shippingRuleService;
+
+     @Autowired
+     private IAddressBookService addressBookService;
+
+     @Autowired
+     private UserService userService;
     //用户下单
      @Override
-     @Transactional(rollbackFor = Exception.class)
+     /*@Transactional(rollbackFor = Exception.class)*/
     public UserOrderSubmitVo submit(UserOrderSubmit userOrderSubmit) {
          Long userId = BaseContext.getCurrentId();
          //生成订单
          Order order = BeanUtil.copyProperties(userOrderSubmit, Order.class);
          order.setUserId(userId);
          order.setOrderTime(LocalDateTime.now());
+         order.setOrderStatus(1);
          save(order);
          String orderId = order.getId();
          //订单详情表
@@ -119,6 +127,14 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
              if (PD == null) {
                  throw new UkonwnErrorException(MessageConstant.UNKNOWN_ERROR);
              }
+             //给订单中的商品进行销量和库存更新
+             PD.setSalesCount(PD.getSalesCount() + quantity);
+             PD.setStock(PD.getStock() - quantity);
+             productService.updateById(PD);
+             stockService.lambdaUpdate()
+                     .eq(Stock::getProductId, productId)
+                     .set(Stock::getSaleStock, PD.getStock())
+                     .update();
 
              OrderDetail orderDetail = new OrderDetail();
              orderDetail.setOrderId(orderId);
@@ -158,5 +174,34 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         result.setPages(page.getPages());
         result.setTotal(page.getTotal());
         return result;
+    }
+    //管理端订单详情
+    @Override
+    public AdminOrderVo queryOrderDetial(Long id) {
+        List<OrderDetail> list = orderDetailService.lambdaQuery()
+                .eq(OrderDetail::getOrderId, id)
+                .list();
+        Order one = lambdaQuery()
+                .eq(Order::getId, id).one();
+        AdminOrderVo adminOrderVo = BeanUtil.copyProperties(one, AdminOrderVo.class);
+        Integer addressBookId = one.getAddressBookId();
+        AddressBook AB = addressBookService.lambdaQuery()
+                .eq(addressBookId != null, AddressBook::getId, addressBookId)
+                .one();
+        StringBuilder sb = new StringBuilder();
+        String address = sb.append(AB.getReceiverName())
+                .append(AB.getPhone())
+                .append(AB.getProvinceName())
+                .append(AB.getCityName())
+                .append(AB.getDistrictName()).toString();
+        Long userId = one.getUserId();
+        User user = userService.lambdaQuery()
+                .eq(userId != null, User::getId, userId)
+                .one();
+        adminOrderVo.setAddress(address);
+        adminOrderVo.setUserName(user.getUsername());
+        adminOrderVo.setOrderDetailVos(list);
+        adminOrderVo.setPhone(user.getPhone());
+        return adminOrderVo;
     }
 }

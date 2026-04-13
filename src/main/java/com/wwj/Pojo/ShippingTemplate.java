@@ -38,10 +38,10 @@ public class ShippingTemplate implements Serializable {
     private Integer isFree;
 
     @ApiModelProperty(value = "创建人ID")
-    private Integer createdBy;
+    private Long createdBy;
 
     @ApiModelProperty(value = "更新人ID")
-    private Integer updatedBy;
+    private Long updatedBy;
 
     @ApiModelProperty(value = "创建时间")
     @TableField(fill = FieldFill.INSERT)//这个注解的功能，插入数据时不需要set值，会自动填充当前时间

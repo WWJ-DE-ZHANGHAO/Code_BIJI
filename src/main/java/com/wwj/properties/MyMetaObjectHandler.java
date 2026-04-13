@@ -16,14 +16,14 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
     @Override
     public void insertFill(MetaObject metaObject) {
         log.info("开始插入填充...");
-        // 遇到标记为 INSERT 的字段，自动填入当前时间
-        this.strictInsertFill(metaObject, "createTime", LocalDateTime.class, LocalDateTime.now());
-        // 如果 updateTime 也想自动填，也可以在这里加
-        this.strictInsertFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());
-        // 如果 createdAt 也想自动填，也可以在这里加
-        this.strictInsertFill(metaObject, "createdAt", LocalDateTime.class, LocalDateTime.now());
-        // 如果 updatedAt 也想自动填，也可以在这里加
-        this.strictInsertFill(metaObject, "updatedAt", LocalDateTime.class, LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        // 兼容项目中多种时间字段命名
+        this.strictInsertFill(metaObject, "createTime", LocalDateTime.class, now);
+        this.strictInsertFill(metaObject, "updateTime", LocalDateTime.class, now);
+        this.strictInsertFill(metaObject, "createdAt", LocalDateTime.class, now);
+        this.strictInsertFill(metaObject, "updatedAt", LocalDateTime.class, now);
+        this.strictInsertFill(metaObject, "createAt", LocalDateTime.class, now);
+        this.strictInsertFill(metaObject, "updateAt", LocalDateTime.class, now);
 
     }
 
@@ -31,9 +31,10 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
     @Override
     public void updateFill(MetaObject metaObject) {
         log.info("开始更新填充...");
-        // 遇到标记为 UPDATE 的字段，自动更新为当前时间
-        this.strictUpdateFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());
-        // 如果 updatedAt 也想自动填，也可以在这里加
-        this.strictInsertFill(metaObject, "updatedAt", LocalDateTime.class, LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        // 更新时仅填充更新时间字段
+        this.strictUpdateFill(metaObject, "updateTime", LocalDateTime.class, now);
+        this.strictUpdateFill(metaObject, "updatedAt", LocalDateTime.class, now);
+        this.strictUpdateFill(metaObject, "updateAt", LocalDateTime.class, now);
     }
 }

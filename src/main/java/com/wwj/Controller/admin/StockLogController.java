@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
  * @since 2026-04-09
  */
 @RestController
-@RequestMapping("/stock-log")
+@RequestMapping("admin/stock-log")
 public class StockLogController {
 
     @Autowired
@@ -29,7 +29,7 @@ public class StockLogController {
 
     //分页查询库存变动日志列表
     @GetMapping("/list")
-    public Result<PageResult<StockLog>> list(@RequestBody StockQuery stockQuery) {
+    public Result<PageResult<StockLog>> list( StockQuery stockQuery) {
         PageResult<StockLog> pageResult = stockLogService.queryStockLogPage(stockQuery);
 
         return Result.success(pageResult);

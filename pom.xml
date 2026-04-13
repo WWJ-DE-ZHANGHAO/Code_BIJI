@@ -18,6 +18,7 @@
         <java.version>17</java.version>
     </properties>
     <dependencies>
+        <!--Redis-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
@@ -25,6 +26,18 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!--Websocket-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
+        <!--Jackson进行JSON序列化和反序列化-->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
         </dependency>
 
         <!--Spring Validation验证框架-->
@@ -75,6 +88,14 @@
             <groupId>com.aliyun</groupId>
             <artifactId>alibabacloud-sts20150401</artifactId>
             <version>1.1.0</version> <!-- 请检查Maven中央仓库是否有更新的版本 -->
+        </dependency>
+
+        <!--导出Excel报表-->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>easyexcel</artifactId>
+            <version>3.2.1</version>
+            <scope>compile</scope>
         </dependency>
 
         <!--JWT 令牌-->

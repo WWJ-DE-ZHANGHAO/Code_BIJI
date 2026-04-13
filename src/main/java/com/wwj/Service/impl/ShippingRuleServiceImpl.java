@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
@@ -31,33 +32,38 @@ public class ShippingRuleServiceImpl extends ServiceImpl<ShippingRuleMapper, Shi
     @Override
     public void addRule(ShippingRule shippingRule) {
         Long adminId = BaseContext.getCurrentId();
-        String shippingTemplateName = shippingRule.getShippingTemplateName();
+        Long STPId = shippingRule.getShippingTemplateId();
         RegionRule region = shippingRule.getRegion();
         BigDecimal freight = shippingRule.getFreight();
-        if (shippingTemplateName .isBlank()|| region==null ) {
+        if (STPId== null|| region==null || freight==null) {
             throw new BaseException("运费规则信息不完整，无法添加");
         }
-        ShippingTemplate one = shippingTemplateService.lambdaQuery().eq(ShippingTemplate::getName, shippingTemplateName).one();
-        Long id = one.getId();
-        shippingRule.setShippingTemplateId(id);
+        ShippingTemplate one = shippingTemplateService.lambdaQuery().eq(ShippingTemplate::getId , STPId).one();
+        shippingRule.setShippingTemplateName(one.getName());
         shippingRule.setCreatedBy(adminId);
         shippingRule.setUpdatedBy(adminId);
+        shippingRule.setCreateAt(LocalDateTime.now());
         save(shippingRule);
     }
      //修改运费规则
     @Override
     public void updateRule(ShippingRule shippingRule) {
         Long adminId = BaseContext.getCurrentId();
-        String shippingTemplateName = shippingRule.getShippingTemplateName();
+        Long STPId = shippingRule.getShippingTemplateId();
         RegionRule region = shippingRule.getRegion();
+        Long id = shippingRule.getId();
         BigDecimal freight = shippingRule.getFreight();
-        if (shippingTemplateName .isBlank()|| region==null ) {
+        if (STPId== null|| region==null || freight==null) {
             throw new BaseException("运费规则信息不完整，无法添加");
         }
-        ShippingTemplate one = shippingTemplateService.lambdaQuery().eq(ShippingTemplate::getName, shippingTemplateName).one();
-        Long id = one.getId();
-        shippingRule.setShippingTemplateId(id);
-        shippingRule.setUpdatedBy(adminId);
-        updateById(shippingRule);
+        ShippingTemplate one = shippingTemplateService.lambdaQuery().eq(ShippingTemplate::getId , STPId).one();
+        ShippingRule SR = lambdaQuery().eq(ShippingRule::getId, id).one();
+        SR.setUpdatedBy(adminId);
+        SR.setShippingTemplateId(STPId);
+        SR.setShippingTemplateName(one.getName());
+        SR.setUpdateAt(LocalDateTime.now());
+        SR.setRegion(region);
+        SR.setFreight(freight);
+        updateById(SR);
     }
 }

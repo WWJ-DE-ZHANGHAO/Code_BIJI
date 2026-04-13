@@ -32,6 +32,7 @@ public class ShippingTemplateServiceImpl extends ServiceImpl<ShippingTemplateMap
         if ((!name.equals(SP.getName()))&&(lambdaQuery().eq(ShippingTemplate::getName, name).one()!=null)){
             throw new BaseException("运费模板已存在");
         }
+        SP.setUpdatedBy(adminId);
         SP.setName(name);
         SP.setIsFree(isFree);
         updateById(SP);
@@ -52,6 +53,8 @@ public class ShippingTemplateServiceImpl extends ServiceImpl<ShippingTemplateMap
         if (one != null) {
             throw new BaseException("运费模板已存在");
         }
+        shippingTemplate.setCreatedBy(adminId);
+        shippingTemplate.setUpdatedBy(adminId);
         save(shippingTemplate);
     }
 }

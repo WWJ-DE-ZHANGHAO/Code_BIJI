@@ -49,7 +49,7 @@ public class Comment implements Serializable {
     @ApiModelProperty(value = "评价内容")
     private String content;
 
-    @ApiModelProperty(value = "审核状态、0是未审核、1是审核通过、2是审核不通过")
+    @ApiModelProperty(value = "审核状态、0是未审核、1是通过、2是未通过")
     private Integer auditStatus=0;
 
     @ApiModelProperty(value = "商家回复内容")

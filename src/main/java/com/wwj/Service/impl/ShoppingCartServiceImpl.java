@@ -1,5 +1,6 @@
 package com.wwj.Service.impl;
 
+import com.wwj.Dto.UsersSaveShoppingCartDto;
 import com.wwj.Pojo.Product;
 import com.wwj.Pojo.ShoppingCart;
 import com.wwj.Mapper.ShoppingCartMapper;
@@ -9,6 +10,7 @@ import com.wwj.Service.IShoppingCartService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.wwj.Vo.UserBuy;
 import com.wwj.Vo.UserCartVo;
+import com.wwj.context.BaseContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +32,8 @@ public class ShoppingCartServiceImpl extends ServiceImpl<ShoppingCartMapper, Sho
 
     @Autowired
     private IProductService productService;
+
+    // 结算
     @Override
     public UserCartVo Settlement(List<Long> ids) {
         List<ShoppingCart> shoppingCarts = listByIds(ids);
@@ -78,5 +82,28 @@ public class ShoppingCartServiceImpl extends ServiceImpl<ShoppingCartMapper, Sho
         userCartVo.setOriginalTotal(originalTotal);
         userCartVo.setActivityDiscount(activityDiscount);
         return userCartVo;
+    }
+    // 添加购物车
+    @Override
+    public void Add(UsersSaveShoppingCartDto usersSaveShoppingCartDto) {
+        Long id = usersSaveShoppingCartDto.getProductId();
+        Integer number = usersSaveShoppingCartDto.getNumber();
+        //先判断该用户的购物车中是否有已经有该商品，有的话就是更新，没有的话就是添加
+        Long userId = BaseContext.getCurrentId();
+        ShoppingCart one = lambdaQuery().eq(ShoppingCart::getUserId, userId).eq(ShoppingCart::getProductId, id).one();
+        if (one!=null){
+            one.setNumber(one.getNumber()+number);
+            updateById(one);
+        }else {
+            ShoppingCart shoppingCart = new ShoppingCart();
+            shoppingCart.setUserId(userId);
+            shoppingCart.setProductId(id);
+            shoppingCart.setNumber(number);
+            shoppingCart.setProductName(productService.getById(id).getBookName());
+            shoppingCart.setProductImage(productService.getById(id).getCoverUrl());
+            shoppingCart.setPrice(productService.getById(id).getPrice());
+            shoppingCart.setProductDescription(productService.getById(id).getDescription());
+            save(shoppingCart);
+        }
     }
 }

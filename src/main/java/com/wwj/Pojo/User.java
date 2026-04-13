@@ -52,6 +52,15 @@ public class User implements Serializable {
     @ApiModelProperty(value = "账号状态 (0:禁用 1:正常)")
     private Integer status =StatusConstant.ENABLE;
 
+    @ApiModelProperty(value = "会员等级ID")
+    private Long memberLevelId;
+
+    @ApiModelProperty(value = "可用积分")
+      private Integer points =0;
+
+    @ApiModelProperty(value = "成长值")
+    private Integer growthValue =0;
+
     @ApiModelProperty(value = "注册时间")
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

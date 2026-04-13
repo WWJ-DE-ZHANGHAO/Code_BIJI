@@ -3,11 +3,13 @@ package com.wwj.Controller.User;
 import cn.hutool.core.bean.BeanUtil;
 import com.wwj.Dto.SubmitCommentDto;
 import com.wwj.Pojo.Comment;
+import com.wwj.Pojo.Order;
 import com.wwj.Pojo.OrderDetail;
 import com.wwj.Pojo.User;
 import com.wwj.Result.Result;
 import com.wwj.Service.ICommentService;
 import com.wwj.Service.IOrderDetailService;
+import com.wwj.Service.IOrderService;
 import com.wwj.Service.UserService;
 import com.wwj.Vo.UserCommentVo;
 import com.wwj.context.BaseContext;
@@ -29,6 +31,10 @@ public class CommentController {
 
     @Autowired
     private IOrderDetailService orderDetailService;
+
+    @Autowired
+    private IOrderService orderService;
+
     //商品评价查询
     @GetMapping("/{productId}")
     public Result<List<UserCommentVo>> list(@PathVariable Long productId){
@@ -64,7 +70,17 @@ public class CommentController {
         comment.setOrderId(orderId);
         commentService.save(comment);
          one.setCommentStatus(1);
-         orderDetailService.updateById(one);
+        orderDetailService.updateById(one);
+         //判断订单的评价状态，如果该订单的所有商品都已经评价了，则修改订单的评价状态为1
+        //使用.count()方法来统计订单详情表中该订单的未评价的数量
+        Long count = orderDetailService.lambdaQuery().eq(OrderDetail::getOrderId, orderId)
+                .eq(OrderDetail::getCommentStatus, 0)
+                .count();
+        if (count==0){
+            orderService.lambdaUpdate().set(Order::getCommentStatus, 1)
+                    .eq(Order::getId, orderId)
+                    .update();
+        }
         return Result.success();
     }
 }

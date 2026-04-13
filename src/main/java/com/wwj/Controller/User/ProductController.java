@@ -3,13 +3,17 @@ package com.wwj.Controller.User;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.wwj.Dto.UserBuyNow;
+import com.wwj.Pojo.Category;
 import com.wwj.Pojo.Comment;
 import com.wwj.Pojo.Product;
+import com.wwj.Pojo.Topic;
 import com.wwj.Query.ProductQuery;
 import com.wwj.Result.PageResult;
 import com.wwj.Result.Result;
+import com.wwj.Service.ICategoryService;
 import com.wwj.Service.ICommentService;
 import com.wwj.Service.IProductService;
+import com.wwj.Service.ITopicService;
 import com.wwj.Vo.UserBuy;
 import com.wwj.Vo.UserBuyNowVo;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +23,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -38,6 +44,12 @@ public class ProductController {
 
     @Autowired
     private ICommentService commentService;
+
+    @Autowired
+    private ITopicService topicService;
+
+    @Autowired
+    private ICategoryService categoryService;
     //搜索框查询
     @GetMapping("/select")
     public Result<List<Product>> select(@RequestParam("keyword") String KWORD){//@RequestParam将前端的keyword参数映射到KWORD变量中
@@ -61,7 +73,7 @@ public class ProductController {
     @GetMapping("/hot")
     public Result<List<Product>> hot(){
         List<Product> list = productService.lambdaQuery()
-                .orderByDesc(Product::getSalesCount)//按照销量降序排序，保证销量高的商品优先展示
+                .orderByDesc(Product::getScore)//按照销量降序排序，保证销量高的商品优先展示
                 .orderByDesc(Product::getId)//如果销量相同，按照id降序排序，保证最新的商品优先展示
                 .last("limit 20").list();
         return Result.success(list);
@@ -78,6 +90,9 @@ public class ProductController {
              score = list.stream().map(Comment::getScore).map(BigDecimal::valueOf)
                     .reduce(BigDecimal.ZERO, BigDecimal::add)
                     .divide(BigDecimal.valueOf(list.size()));
+        }
+        else{
+            score = product.getScore();
         }
         product.setScore(score);
         return Result.success(product);
@@ -139,6 +154,24 @@ public class ProductController {
                 .list();
 
         return Result.success(list);
+    }
+
+
+    //专题书籍
+    @GetMapping("/specialtopic")
+    public Result<Map<Topic,List<Product>>> specialTopic(){
+        List<Topic> TP = topicService.lambdaQuery().eq(Topic::getStatus, 1).list();
+        Map<Topic,List<Product>> map = new HashMap<>();
+        for (Topic topic : TP) {
+            List<Product> list = productService.lambdaQuery()
+                    .in(Product::getCategoryId, topic.getCategoryId())//只查询指定专题下的商品
+                    .orderByDesc(Product::getSalesCount)//按照销量降序排序，保证销量高的商品优先展示
+                    .orderByDesc(Product::getId)//如果销量相同，按照id降序排序，保证最新的商品优先展示
+                    .list();
+            map.put(topic,list);
+        }
+
+       return Result.success(map);
     }
 
 }

@@ -29,7 +29,7 @@ public class CommentController {
 
     //复杂条件分页查询查询评价列表
       @GetMapping("/list")
-      public Result<PageResult<AdminCommentVo>> list(@RequestBody  CommentQuery commentQuery){
+      public Result<PageResult<AdminCommentVo>> list( CommentQuery commentQuery){
           PageResult<AdminCommentVo> pageResult = commentService. CommentpageQuery(commentQuery);
           return Result.success(pageResult);
       }
@@ -43,7 +43,7 @@ public class CommentController {
           commentService.updateById( comment);
         return Result.success();
     }
-    //拒绝评价
+    //审核不通过评价
     @PutMapping("/refuse/{id}")
     public Result refuse(@PathVariable Long id){
           Comment comment = commentService.getById(id);
@@ -69,8 +69,8 @@ public class CommentController {
 
 
     //商家回复评价
-    @PostMapping("/reply/")
-    public Result reply(@RequestBody AdminReplyDto adminReplyDto){
+    @PostMapping("/reply")
+    public Result<String> reply(@RequestBody AdminReplyDto adminReplyDto){
         Long commentId = adminReplyDto.getCommentId();
         String reply = adminReplyDto.getReply();
         if (reply.isBlank()){
@@ -80,7 +80,7 @@ public class CommentController {
         comment.setReplyContent(reply);
         comment.setReplyTime(LocalDateTime.now());
         commentService.updateById(comment);
-        return Result.success();
+        return Result.success("成功回复");
     }
 
 

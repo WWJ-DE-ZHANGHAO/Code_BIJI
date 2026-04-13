@@ -33,7 +33,7 @@ public class Order implements Serializable {
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private String id;
 
-    @ApiModelProperty(value = "订单状态: 1待付款、2待发货、3待收货、4已收货、5售后、6评价、7已取消")
+    @ApiModelProperty(value = "订单状态: 1待付款、2待发货、3待收货、4已收货、5售后、6已取消")
     private Integer orderStatus;
 
     @ApiModelProperty(value = "售后状态: 0未申请售后、1售后中、2已完结")
