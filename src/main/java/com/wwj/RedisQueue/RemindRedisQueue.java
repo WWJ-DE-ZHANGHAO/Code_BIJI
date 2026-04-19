@@ -25,7 +25,10 @@ public class RemindRedisQueue {
         List<Object> list = Optional.ofNullable(redisTemplate.opsForList().range(KEY, 0, -1))
                 .orElse(Collections.emptyList());
         redisTemplate.delete(KEY);
-        return list.stream().map(item -> (OrderRemindMessage) item).toList();
+        return list.stream()
+                .filter(item -> item instanceof OrderRemindMessage)
+                .map(item -> (OrderRemindMessage) item)
+                .toList();
 
     }
 }

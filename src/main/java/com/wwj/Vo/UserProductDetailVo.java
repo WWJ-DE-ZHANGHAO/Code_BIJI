@@ -1,35 +1,29 @@
-package com.wwj.Pojo;
+package com.wwj.Vo;
 
-import java.math.BigDecimal;
-
-import com.baomidou.mybatisplus.annotation.*;
-
-import java.text.DecimalFormat;
-import java.time.LocalDateTime;
-import java.io.Serializable;
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.wwj.Pojo.CouponTemplate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.experimental.Accessors;
+import lombok.NoArgsConstructor;
 
-/**
- * <p>
- * 商品/书籍表
- * </p>
- *
- * @author 吴哥
- * @since 2026-03-31
- */
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
 @Data
-@EqualsAndHashCode(callSuper = false)
-@Accessors(chain = true)
-@TableName("product")
-@ApiModel(value="Product对象", description="商品/书籍表")
-public class Product implements Serializable {
-
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+@ApiModel(value = "用户商品详情")
+public class UserProductDetailVo {
     private static final long serialVersionUID = 1L;
     //前端没有分类类名的信息，此时通过多表查询到分类的名称，再封装给PtoductVO对象，返回给前端展示就行了，
     //用MP，getById方法查询分类表，获取分类名称，封装到VO对象中返回给前端展示就行了
@@ -60,17 +54,17 @@ public class Product implements Serializable {
     @NotBlank(message = "封面图片URL不能为空")
     private String coverUrl;
 
-     @ApiModelProperty(value = "书籍详情(长描述)")
-     @NotBlank(message = "书籍详情(长描述)不能为空")
-     private String detailHtml;
+    @ApiModelProperty(value = "书籍详情(长描述)")
+    @NotBlank(message = "书籍详情(长描述)不能为空")
+    private String detailHtml;
 
-     @ApiModelProperty(value = "商品动态属性")
-     @NotBlank(message = "商品动态属性不能为空")
-     private String attributes;
+    @ApiModelProperty(value = "商品动态属性")
+    @NotBlank(message = "商品动态属性不能为空")
+    private String attributes;
 
-     @ApiModelProperty(value = "商品轮播图列表")
-     @NotBlank(message = "商品轮播图列表不能为空")
-      private String sliderImages;
+    @ApiModelProperty(value = "商品轮播图列表")
+    @NotBlank(message = "商品轮播图列表不能为空")
+    private String sliderImages;
 
     @ApiModelProperty(value = "书籍简介(短描述)")
     @NotBlank(message = "书籍简介(短描述)不能为空")
@@ -99,4 +93,6 @@ public class Product implements Serializable {
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
+    @ApiModelProperty(value = "优惠券集合")
+    private List<CouponTemplate> couponTemplates;
 }

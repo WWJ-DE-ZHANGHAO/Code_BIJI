@@ -52,7 +52,7 @@ public class User implements Serializable {
     @ApiModelProperty(value = "账号状态 (0:禁用 1:正常)")
     private Integer status =StatusConstant.ENABLE;
 
-    @ApiModelProperty(value = "会员等级ID")
+    @ApiModelProperty(value = "会员等级ID 1是普通会员、2是白银会员、3是黄金会员")
     private Long memberLevelId;
 
     @ApiModelProperty(value = "可用积分")

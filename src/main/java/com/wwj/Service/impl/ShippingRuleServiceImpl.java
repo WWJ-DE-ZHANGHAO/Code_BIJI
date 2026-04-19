@@ -33,7 +33,7 @@ public class ShippingRuleServiceImpl extends ServiceImpl<ShippingRuleMapper, Shi
     public void addRule(ShippingRule shippingRule) {
         Long adminId = BaseContext.getCurrentId();
         Long STPId = shippingRule.getShippingTemplateId();
-        RegionRule region = shippingRule.getRegion();
+        String region = shippingRule.getRegion();
         BigDecimal freight = shippingRule.getFreight();
         if (STPId== null|| region==null || freight==null) {
             throw new BaseException("运费规则信息不完整，无法添加");
@@ -50,7 +50,7 @@ public class ShippingRuleServiceImpl extends ServiceImpl<ShippingRuleMapper, Shi
     public void updateRule(ShippingRule shippingRule) {
         Long adminId = BaseContext.getCurrentId();
         Long STPId = shippingRule.getShippingTemplateId();
-        RegionRule region = shippingRule.getRegion();
+        String region = shippingRule.getRegion();
         Long id = shippingRule.getId();
         BigDecimal freight = shippingRule.getFreight();
         if (STPId== null|| region==null || freight==null) {

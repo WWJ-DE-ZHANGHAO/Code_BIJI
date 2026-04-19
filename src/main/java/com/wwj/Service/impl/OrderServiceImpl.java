@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,9 +54,18 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
      @Autowired
      private UserService userService;
+
+     @Autowired
+     private IUserCouponRecordService userCouponRecordService;
+     @Autowired
+     private IPointsLogService pointsLogService;
+
+     @Autowired
+     private IMemberLevelService memberLevelService;
+
     //用户下单
      @Override
-     /*@Transactional(rollbackFor = Exception.class)*/
+     @Transactional(rollbackFor = Exception.class)
     public UserOrderSubmitVo submit(UserOrderSubmit userOrderSubmit) {
          Long userId = BaseContext.getCurrentId();
          //生成订单
@@ -65,6 +75,56 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
          order.setOrderStatus(1);
          save(order);
          String orderId = order.getId();
+
+         //更新优惠券领取记录状态/积分数量/积分使用记录/成长值
+         Long couponRecordId = userOrderSubmit.getCouponRecordId();
+         Integer usedPoints = userOrderSubmit.getUsedPoints();
+         if (couponRecordId != null) {
+             //优惠券使用，更新领取记录数据
+             userCouponRecordService.lambdaUpdate().eq(UserCouponRecord::getId, couponRecordId)
+                     .set(UserCouponRecord::getUseTime, LocalDateTime.now())
+                     .set(UserCouponRecord::getStatus, 1);
+         }
+         if (usedPoints != null) {
+             //积分使用
+             userService.lambdaUpdate().eq(User::getId, userId)
+                     .setSql("points=points-" + usedPoints)
+                     .update();
+
+             //积分使用记录
+             //扣减积分记录
+             PointsLog pointsLog = new PointsLog();
+             pointsLog.setUserId(userId);
+             pointsLog.setChangeAmount(-usedPoints);
+             pointsLog.setReason("下单抵扣积分使用");
+             pointsLog.setCreateTime(LocalDateTime.now());
+             pointsLogService.save(pointsLog);
+         }
+         //判断是否满足奖励成长值和积分的规则
+         BigDecimal actualPay = order.getActualPay();
+         if(actualPay!=null&&actualPay.compareTo(BigDecimal.valueOf(100))>=0){
+             userService.lambdaUpdate().eq(User::getId, userId)
+                     .setSql("growth_value=growth_value+20,points=points+200")
+                     .update();
+             PointsLog pointsLog1 = new PointsLog();
+             pointsLog1.setUserId(userId);
+             pointsLog1.setChangeAmount(+200);
+             pointsLog1.setReason("下单奖励积分");
+             pointsLog1.setCreateTime(LocalDateTime.now());
+             pointsLogService.save(pointsLog1);
+         }
+         //查看用户的成长值是否满足升级条件
+         User user = userService.getById(userId );
+         Long memberLevelId = user.getMemberLevelId();
+         Integer growthValue = user.getGrowthValue();
+         if (memberLevelId<3&&growthValue >= memberLevelService.getById(memberLevelId).getMinGrowthValue()){
+             user.setMemberLevelId(memberLevelId+1);
+             userService.updateById(user);
+         }
+
+
+
+
          //订单详情表
          List<OrderDetail> orderDetails = new ArrayList<>();
 

@@ -43,6 +43,7 @@ public class JwtTokenUserInterceptor implements HandlerInterceptor {
 
         //1、从请求头中获取令牌
         String token = request.getHeader(jwtProperties.getUserTokenName());
+        String Admintoken = request.getHeader(jwtProperties.getAdminTokenName());
 
         //2、校验令牌
         try {

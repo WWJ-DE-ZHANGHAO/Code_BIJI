@@ -105,8 +105,9 @@ public class ShoppingCartController {
     }
 
     //结算购物车，将购物车中的商品添加到订单详情表中
-    @PostMapping("/checkout")
-        public Result<UserCartVo> checkout(@RequestParam("shippingAddressIds") List<Long>ids){
+    @GetMapping("/checkout")
+        public Result<UserCartVo> checkout(@RequestParam("shippingAddressIds") List<Long>ids,
+                                           @RequestParam String source){
         UserCartVo settlement = shoppingCartService.Settlement(ids);
         return Result.success(settlement);
 

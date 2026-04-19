@@ -1,20 +1,45 @@
 package com.wwj.WebSocket;
 
+import com.wwj.interceptor.WebSocketAuthInterceptor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import org.springframework.web.socket.server.support.DefaultHandshakeHandler;
+
+import java.security.Principal;
+import java.util.Map;
 
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+
+    @Autowired
+    private WebSocketAuthInterceptor webSocketAuthInterceptor;
+
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // 注册一个Stomp的端点，并指定使用SockJS协议，连接地址:ws://ip:port/ws
         registry.addEndpoint("/ws")
-                        .setAllowedOriginPatterns("*") // 允许所有来源
-                        .withSockJS();
+                .addInterceptors(webSocketAuthInterceptor)
+                .setAllowedOriginPatterns("*")
+                .setHandshakeHandler(new DefaultHandshakeHandler() {
+                    @Override
+                    protected Principal determineUser(ServerHttpRequest request,
+                                                      WebSocketHandler wsHandler,
+                                                      Map<String, Object> attributes) {
+                        // 从 attributes 中获取之前设置的 Principal
+                        return (Principal) attributes.get("user");
+                    }
+                })
+                .withSockJS()
+                .setWebSocketEnabled(true)
+                .setStreamBytesLimit(512 * 1024)
+                .setHttpMessageCacheSize(100)
+                .setDisconnectDelay(30000);
     }
 
     @Override
@@ -23,7 +48,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.enableSimpleBroker("/topic", "/queue");
         //服务端接收前缀
         registry.setApplicationDestinationPrefixes("/app");
+        registry.setUserDestinationPrefix("/user");
     }
-
-    }
-
+}

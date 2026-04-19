@@ -53,6 +53,7 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
                 .excludePathPatterns("/user/user/login")//拦截器不拦截登录接口
                 .excludePathPatterns("/user/user/code")
                 .excludePathPatterns("/user/user/register");
+
     }
 
     @Bean

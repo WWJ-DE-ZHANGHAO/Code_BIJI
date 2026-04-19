@@ -39,9 +39,9 @@ public class ShippingRule implements Serializable {
     @ApiModelProperty(value = "运费模板ID")
     private Long shippingTemplateId;
 
-    @TableField(typeHandler = JacksonTypeHandler.class)
+
     @ApiModelProperty(value = "配送地区")
-    private RegionRule region;
+    private String region;
 
     @ApiModelProperty(value = "运费模版名称")
     private String shippingTemplateName;

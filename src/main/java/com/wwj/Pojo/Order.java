@@ -85,7 +85,7 @@ public class Order implements Serializable {
     private LocalDateTime deliveryTime;
 
     @ApiModelProperty(value = "运费模版ID")
-    private Integer shippingTemplateId;
+    private Integer shippingTemplateId=0;
 
     @ApiModelProperty(value = "商品原价总额")
     private BigDecimal originalTotal;
@@ -95,6 +95,12 @@ public class Order implements Serializable {
 
     @ApiModelProperty(value = "运费")
     private BigDecimal freight;
+
+    @ApiModelProperty(value = "优惠券记录Id")
+    private Long couponRecordId;
+
+    @ApiModelProperty(value = "积分使用数量")
+    private Integer usedPoints;
 
 
 }

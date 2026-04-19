@@ -36,7 +36,9 @@ public class PageQuery {
         }
         return p;
     }
-   // 手动设置排序字段和排序方式
+   // 手动设置默认排序字段和排序方式，
+   // 在构建分页条件时会调用这个方法，需要自己设置前端没有传来排序字段和方式的默认值，执行时回调用另一个toMaPage()方法,
+   //进行两次判断，分别判断前端是否传了排序字段和排序方式，优先使用
     public <T> Page<T> toMpPage(String defaultSortBy, boolean isAsc){
         OrderItem orderItem = new OrderItem();
         orderItem.setAsc(isAsc);

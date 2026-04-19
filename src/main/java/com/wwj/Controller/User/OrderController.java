@@ -5,10 +5,7 @@ import com.wwj.Dto.UserOrderPayment;
 import com.wwj.Dto.UserOrderSubmit;
 import com.wwj.Dto.UsersSaveShoppingCartDto;
 import com.wwj.Message.OrderRemindMessage;
-import com.wwj.Pojo.Order;
-import com.wwj.Pojo.OrderDetail;
-import com.wwj.Pojo.Product;
-import com.wwj.Pojo.Stock;
+import com.wwj.Pojo.*;
 import com.wwj.RedisQueue.RemindRedisQueue;
 import com.wwj.Result.Result;
 import com.wwj.Service.*;
@@ -18,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -53,6 +51,16 @@ public class OrderController {
 
     @Autowired
     private SimpMessagingTemplate messageTemplate;
+
+    @Autowired
+    private UserService userService;
+
+
+    @Autowired
+    private IUserCouponRecordService userCouponRecordService;
+
+    @Autowired
+    private IPointsLogService pointsLogService;
     //用户下单
     @PostMapping("/submit")
     public Result<UserOrderSubmitVo> submit(@RequestBody UserOrderSubmit userOrderSubmit){
@@ -144,6 +152,43 @@ public class OrderController {
                     .set(Stock::getSaleStock, product.getStock())
                     .update();
         }
+        //回滚积分和成长值，退回优惠券
+        Order OO = orderService.getById(id);
+        Long couponRecordId = OO.getCouponRecordId();
+        Integer usedPoints = OO.getUsedPoints();
+        Long userId = BaseContext.getCurrentId();
+        if (couponRecordId != null) {
+            //退回优惠券
+            UserCouponRecord CC = userCouponRecordService.getById(couponRecordId);
+            CC.setReceiveTime(LocalDateTime.now());
+            CC.setStatus(0);
+            CC.setUseTime(null);
+        }
+        //回滚积分
+        userService.lambdaUpdate().eq(User::getId, userId).setSql("points=points+"+usedPoints)
+                .update();
+        PointsLog PL = new PointsLog();
+        PL.setUserId(userId);
+        PL.setChangeAmount(+usedPoints);
+        PL.setReason("订单取消");
+        PL.setCreateTime(LocalDateTime.now());
+        pointsLogService.save(PL);
+        //回滚成长值和积分
+        if (OO.getActualPay().compareTo(BigDecimal.valueOf(100))>=0){
+            userService.lambdaUpdate().eq(User::getId, userId)
+                    .setSql("growth_value=growth_value-"+20)
+                    .setSql("points=points-"+200)
+                    .update();
+            PointsLog PL1 = new PointsLog();
+            PL1.setUserId(userId);
+            PL1.setChangeAmount(-200);
+            PL1.setReason("订单取消");
+            PL1.setCreateTime(LocalDateTime.now());
+            pointsLogService.save(PL1);
+        }
+
+
+
         return Result.success();
     }
 
@@ -161,7 +206,6 @@ public class OrderController {
         remindRedisQueue.push(ORM);
         //WebSocket推送所有管理端
         messageTemplate.convertAndSend("/topic/admin/order/remind", ORM);
-
 
         return Result.success("催发货成功");
     }
@@ -191,5 +235,7 @@ public class OrderController {
         orderService.updateById(order);
         return Result.success();
     }
+
+    //查看填写订单页面的商品信息
 
 }

@@ -9,10 +9,12 @@ import com.wwj.Result.PageResult;
 import com.wwj.Result.Result;
 import com.wwj.Service.*;
 import com.wwj.Vo.AdminOrderVo;
+import com.wwj.context.BaseContext;
 import io.swagger.annotations.Api;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -50,6 +52,12 @@ public class OrderController {
 
     @Autowired
     private RemindRedisQueue remindRedisQueue;
+
+    @Autowired
+    private IUserCouponRecordService userCouponRecordService;
+
+    @Autowired
+    private IPointsLogService pointsLogService;
 
 
 
@@ -113,6 +121,10 @@ public class OrderController {
                             .eq(Stock::getProductId,orderDetail.getProductId())
                             .update();
                 });
+
+        //回滚积分和成长值
+        backpointsandgrowth( id);
+
         return Result.success();
     }
 
@@ -132,7 +144,7 @@ public class OrderController {
          order.setCancelReason("商家取消");
          order.setCancelTime(LocalDateTime.now());
          orderService.updateById(order);
-
+        //恢复库存
          orderDetailService.lambdaQuery()
                  .eq(OrderDetail::getOrderId,id)
                  .list()
@@ -147,6 +159,8 @@ public class OrderController {
                              .eq(Stock::getProductId,orderDetail.getProductId())
                              .update();
                  });
+         //回滚积分和成长值
+          backpointsandgrowth( id);
 
         return Result.success();
     }
@@ -158,6 +172,43 @@ public class OrderController {
         //获取未读消息
         List<OrderRemindMessage> list = remindRedisQueue.popAll();
         return Result.success(list);
+    }
+
+    //订单取消时，退回积分和成长值的 方法
+    public void  backpointsandgrowth(Long id){
+        //回滚积分和成长值，退回优惠券
+        Order OO = orderService.getById(id);
+        Long couponRecordId = OO.getCouponRecordId();
+        Integer usedPoints = OO.getUsedPoints();
+        Long userId = BaseContext.getCurrentId();
+        if (couponRecordId!=null) {
+            //退回优惠券
+            UserCouponRecord CC = userCouponRecordService.getById(couponRecordId);
+            CC.setReceiveTime(LocalDateTime.now());
+            CC.setStatus(0);
+            CC.setUseTime(null);
+        }
+        //回滚积分和成长值
+        userService.lambdaUpdate().eq(User::getId, userId).setSql("points=points+"+usedPoints)
+                .update();
+        PointsLog PL = new PointsLog();
+        PL.setUserId(userId);
+        PL.setChangeAmount(+usedPoints);
+        PL.setReason("订单取消");
+        PL.setCreateTime(LocalDateTime.now());
+        pointsLogService.save(PL);
+        //回滚成长值
+        if (OO.getActualPay().compareTo(BigDecimal.valueOf(100))>=0){
+            userService.lambdaUpdate().eq(User::getId, userId)
+                    .setSql("growth_value=growth_value-20,points=points-200")
+                    .update();
+            PointsLog PL1 = new PointsLog();
+            PL1.setUserId(userId);
+            PL1.setChangeAmount(-200);
+            PL1.setReason("订单取消");
+            PL1.setCreateTime(LocalDateTime.now());
+            pointsLogService.save(PL1);
+        }
     }
 
 }

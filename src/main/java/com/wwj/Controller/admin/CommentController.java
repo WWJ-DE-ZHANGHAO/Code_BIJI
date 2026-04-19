@@ -4,11 +4,14 @@ import cn.hutool.core.bean.BeanUtil;
 import com.wwj.Dto.AdminReplyDto;
 import com.wwj.Pojo.Admin;
 import com.wwj.Pojo.Comment;
+import com.wwj.Pojo.PointsLog;
 import com.wwj.Pojo.User;
 import com.wwj.Query.CommentQuery;
 import com.wwj.Result.PageResult;
 import com.wwj.Result.Result;
 import com.wwj.Service.ICommentService;
+import com.wwj.Service.IMemberLevelService;
+import com.wwj.Service.IPointsLogService;
 import com.wwj.Service.UserService;
 import com.wwj.Vo.AdminCommentVo;
 import com.wwj.Vo.UserCommentVo;
@@ -27,6 +30,15 @@ public class CommentController {
     @Autowired
     private ICommentService commentService;
 
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private IPointsLogService pointsLogService;
+
+    @Autowired
+    private IMemberLevelService memberLevelService;
+
     //复杂条件分页查询查询评价列表
       @GetMapping("/list")
       public Result<PageResult<AdminCommentVo>> list( CommentQuery commentQuery){
@@ -41,6 +53,27 @@ public class CommentController {
           Comment comment = commentService.getById(id);
           comment.setAuditStatus(1);
           commentService.updateById( comment);
+          //评价成功奖励积分和成长值
+         userService.lambdaUpdate().eq(User::getId,comment.getUserId())
+                 .setSql("growth_value=growth_value+5,points=points+50")
+                 .update();
+         //新增积分记录
+        PointsLog PL = new PointsLog();
+        PL.setUserId(comment.getUserId());
+        PL.setChangeAmount(+50);
+        PL.setReason("评价成功");
+        PL.setCreateTime(LocalDateTime.now());
+        pointsLogService.save(PL);
+        //查看用户的成长值是否满足升级条件
+        User user = userService.getById(comment.getUserId());
+        Long memberLevelId = user.getMemberLevelId();
+        Integer growthValue = user.getGrowthValue();
+        if (memberLevelId<3&&growthValue >= memberLevelService.getById(memberLevelId).getMinGrowthValue()){
+            user.setMemberLevelId(memberLevelId+1);
+            userService.updateById(user);
+        }
+
+
         return Result.success();
     }
     //审核不通过评价

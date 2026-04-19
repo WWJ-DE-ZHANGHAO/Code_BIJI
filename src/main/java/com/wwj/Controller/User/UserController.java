@@ -4,8 +4,10 @@ import cn.hutool.core.bean.BeanUtil;
 import com.wwj.Constant.JwtClaimsConstant;
 import com.wwj.Dto.UserLoginDto;
 import com.wwj.Dto.UserRegisterDto;
+import com.wwj.Pojo.MemberLevel;
 import com.wwj.Pojo.User;
 import com.wwj.Result.Result;
+import com.wwj.Service.IMemberLevelService;
 import com.wwj.Service.UserService;
 import com.wwj.Utils.JwtUtil;
 import com.wwj.Vo.UserLoginVo;
@@ -28,6 +30,9 @@ public class UserController {
     private UserService userService;
     @Autowired
     private JwtProperties jwtProperties;
+
+    @Autowired
+    private IMemberLevelService memberLevelService;
 
     //生成发送验证码
     @PostMapping("/code")
@@ -76,5 +81,14 @@ public class UserController {
         Long userId = BaseContext.getCurrentId();
         User user = userService.getById(userId);
         return Result.success(user);
+    }
+
+    //查询会员等级特权
+    @GetMapping("/Member")
+    public Result<MemberLevel> Member(){
+        Long userId = BaseContext.getCurrentId();
+        Long memberLevelId = userService.getById(userId).getMemberLevelId();
+        MemberLevel MM = memberLevelService.getById(memberLevelId);
+        return Result.success(MM);
     }
 }
