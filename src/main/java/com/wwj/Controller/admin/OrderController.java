@@ -74,17 +74,19 @@ public class OrderController {
     }
 
     //订单发货
-    @PutMapping("/delivery/{id}")
-    public Result delivery(@PathVariable Long id){
-         Order order = orderService.getById(id);
+    @PutMapping("/delivery")
+    public Result delivery(@RequestParam String  OrderId,
+                           @RequestParam Long  ShippingTemplateId){
+         Order order = orderService.getById(OrderId);
          if (order.getOrderStatus()!=2){
              return Result.error("订单状态异常，无法发货");
          }
          order.setOrderStatus(3);
+         order.setShippingTemplateId(ShippingTemplateId);
          orderService.updateById(order);
          //减当前库存
          orderDetailService.lambdaQuery()
-                 .eq(OrderDetail::getOrderId,id)
+                 .eq(OrderDetail::getOrderId,OrderId)
                  .list()
                  .forEach(orderDetail -> {
                      stockService.lambdaUpdate()

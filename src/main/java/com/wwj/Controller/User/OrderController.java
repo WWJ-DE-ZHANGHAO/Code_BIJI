@@ -29,6 +29,7 @@ import java.util.List;
  */
 @RestController("UserOrderController")
 @RequestMapping("/user/order")
+@CrossOrigin(origins = "*", allowedHeaders = "*") // 添加跨域支持
 public class OrderController {
 
     @Autowired

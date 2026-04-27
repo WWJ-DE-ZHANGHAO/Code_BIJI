@@ -40,6 +40,12 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
+   <!--     &lt;!&ndash; Spring Security &ndash;&gt;
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>-->
+
         <!-- Spring Data JPA (用于消息持久化) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

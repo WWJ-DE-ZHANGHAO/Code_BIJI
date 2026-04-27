@@ -93,7 +93,10 @@ public class ChatController {
     // 获取会话列表
     @GetMapping("/api/chat/sessions")
     public List<ChatSession> getSessions() {
-        return chatSessionService.list();
+        List<ChatSession> list = chatSessionService.lambdaQuery()
+                .eq(ChatSession::getAdminId, 2L)
+                .list();
+        return list;
     }
 
     // 标记已读
