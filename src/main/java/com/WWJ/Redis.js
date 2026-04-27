@@ -90,7 +90,7 @@
 * Set:{A,B,C}，一个无序集合，不能重复
 * SortedSet:{A:1,B:2,C:3},一个有序集合，可排序，不能重复
 * GEO:{A:(120.3 30.5)}，一个地理坐标，经纬度
-* BirMap:0110110101110101011。这最后两个都是按位进行存储的一种方式，底层的本质都是一种字符串
+* BitMap:0110110101110101011。这最后两个都是按位进行存储的一种方式，底层的本质都是一种字符串
 * HyperLog:0110110101110101011
 * 除了这些类型，还有其他的用于消息队列等功能的类型。
 * 可以在官网文档中查看命令，也可以在命令行中使用help命令进行查看各个命令
@@ -100,7 +100,7 @@
 
 //通用命令
 /*
-* KEYS命令:查看符合条件的所有键Key(在生产环境中不建议使用，因为会Redis是单线程的如果库中有很多的话，会导致线程阻塞)
+* KEYS命令:查看符合条件的所有键Key(在生产环境中不建议使用，因为Redis是单线程的,如果库中有很多的话，会导致线程阻塞)
 * 例如:KEYS *:查看库中的所有键KEY
 * ！！！！！！小技巧:通过help[command]可以查看一个命令的具体用法
 * DEL:删除一个/或多个指定的key，用空格隔开
@@ -141,7 +141,7 @@
 * Redis的key允许有多个单词形成曾是结构，多个单词之间用:隔开。格式:项目名:业务名:类型:id
 * 例如:一个名为RUOYI的项目，有user和product两种不用类型的数据，我们可以定为
 * RUOYI:user:1、RUOYI:product:1
-* 入过value是一个java对象，则可以将对象序列化为JSON字符串后存储
+* 如果value是一个java对象，则可以将对象序列化为JSON字符串后存储
 * 例:
 * set RUOYI:user:1 {"id":1,"name":"jack","age":21}
 * 在图形化界面展示出来的就是树状的，一层一层的
@@ -178,7 +178,7 @@
 * LPOP key :移除并返回列表左侧的第一个元素，没有则返回null(注意！！可以指定移除几个)
 * RPUSH key element……:向列表右侧插入一个或多个元素
 * RPOP key:移除并返回列表右侧的第一个元素(注意！！可以指定移除几个)
-* LRANGE key star end:返回一段角标范围内的所有元素(这里的start和end是对应的索引，1表示第二个元素)，只是查看不会移除
+* LRANGE key star end:返回一段角标范围内的所有元素(这里的start和end是对应的索引，1表示第二个元素)，只是查看不会移除,-1表示最后一个元素
 * BLPOP和BRPOP:与LPOP和RPOP类似，只不过在没有元素时等待指定时间，而不是直接返回
 * (可以设置等待时间，也可以在这个端等待时，在另一个端中给这个key添加元素)
 * 注意！！！L推1、2、3得到的会是321。R推1、2、3得到的会是123。多个元素之间用空格隔开
@@ -220,13 +220,14 @@
 * 应用场景:由于可排序特性、经常被用于实现排行榜这样的功能
 * ZADD key score member:添加一个或多个元素到sorted set，如果已经存在则更新其score值
 * ZREM key member:删除sorted set中的一个指定元素
-* ZSCORE key member :获取sorted set中指定元素的score值
+* ZSCORE key member :获取sorted set中指定元素的score值，如果不存在则返回null
 * ZRANK key member:获取sorted set中指定元素的排名(实现按照socre排序之后，排名从0开始，默认升序。最大的在最下面)
 * ZCARD key member:获取sorted set中元素个数
-* ZCOUNT key min max :统计score值在给定范围的所有元素个数(按照的是分数值即score的值，差多少分以下的，用0~xx。反过来就是xx~xx)
+* ZCOUNT key min max :统计score值在给定范围的所有元素个数(按照的是分数值即score的值，查多少分以下的，用0~xx。反过来就是xx~xx)，返回元素个数
 * ZINCRBY key increment member:让sorted set的指定元素的score自增、步长为指定的increment
-* ZRANGE key min max:按照socre排序后。获取指定排名范围内的元素(按照排名)
-* ZRANGEBYSCORE key min max:按照score排序后，获取指定score范围内的元素(按照分数值)
+* ZRANGE key min max:按照socre排序后。获取指定排名范围内的元素(按照排名，min和max是排名)，返回元素名称,
+* 默认是根据升序查询的，根据降序查询则需要加上REV即ZREVRANGE
+* ZRANGEBYSCORE key min max:按照score排序后，获取指定score范围内的元素(按照分数值，min和max是分数值)，返回元素名称
 * ZDIFF、ZINTER 、ZUNION:求差集、交集、并集
 * 注意！！以上这些默认都是按升序的，如果想要降序则需要在Z后面加上REV
 * 例如:1、3、4、7.升序就是1347
@@ -357,15 +358,18 @@
 * return redisTemplate;
 *
 * }
-* 没有设置却能反序列化到程序中，这是因为序列化成JSON对象的时候，会标上一个例如:@class:com.atguigu.redis.entity.User,才能知道要反序列化成什么对象
+* 没有设置反序列化，却能反序列化到程序中，这是因为序列化成JSON对象的时候，会标上一个例如:@class:com.atguigu.redis.entity.User一起存储到Redis中
+* ,才能知道要反序列化成什么对象
 * 注意！！！要添加jackson的依赖，否则会报异常
 *
 * 优化:使用JSON的序列化器能自动实现序列化和反序列化，确实很方便，但是每次存储都会存入一个@class属性，这样会增加存储空间，如果有成百上千个数据会很耗费空间
 * 为了节省空间，统一使用String序列化器，不使用JSON序列化器，当需要存储Java对象时，手动完成对象的序列化和反序列化
 *
 * 也不用修改配置类，使用String提供的StringRedisTemplate类，它的key和value的序列化方式默认是String方式
-* 手动序列化和反序列化时可以使用SpringMVC中默认使用的ObjectMapper类
+* 需要手动序列化和反序列化时，可以使用SpringMVC中默认使用的ObjectMapper类
 * 提供的writeValueAsString()和readValue(json,xxx.class)方法进行序列化和反序列化
 *
-* 再StringRedisTemplate调用opsForHash()方法，调用put(key,fileter,value)方法添加键值对。
+* 再练习用StringRedisTemplate调用opsForHash()方法，调用put(key,fileter,value)方法添加键值对。
+*
+*
 * */
