@@ -378,11 +378,16 @@ ARGV[3]:当前线程的唯一标识
 *其他线程在这个台节点上获取到了锁，但是其他的节点没有获取到锁，仍然不算是获取锁成功了，保证了线程安全
 * 这用的是Redisson的multiLock(连锁)原理
 * 测试:
+*
 * 在Redis中开启多个端口实例，模拟Redis集群效果(使用单程序多配置文件)
 * 在虚拟机中，找到原先的Redis的配置文件redis.conf。
 * 复制多个配置文件：cp redis.conf redis-6380.conf，cp redis.conf redis-6381.conf
 * 再创建两个文件夹来存储日志文件
-* mkdir -p /usr/local/src/redis-6.2.6/data/6380、mkdir/usr/local/src/redis-6.2.6/data/6381
+* mkdir /usr/local/src/redis-6.2.6/data/6380、mkdir/usr/local/src/redis-6.2.6/data/6381
+* 有一个批量复制的命令(使用的是管道组合命令，批量复制)
+* mkdir 7001 7002 7003 : 创建三个文件夹7001、7002、7003并放置在当前目录下
+* echo 7001 7002 7003 | xargs -t -n 1 cp redis.6.2.6/redis.conf:就能将redis.conf复制到7701、7002、7003三个文件夹下
+*
 * 在 vi 界面中，按键盘上的 i 键，左下角会出现 -- INSERT --，表示可以输入了。
   修改/添加以下 4 项内容（可以用方向键移动光标）：
   端口：找到 port 6379，改为 port 6380和port 6381
@@ -391,6 +396,21 @@ ARGV[3]:当前线程的唯一标识
    数据目录：找到 dir ./，建议改为一个绝对路径，例如 dir /usr/local/src/redis-6.2.6/data/6380
    注意！！！6379是默认端口，所以Linux系统的防火墙可能会默认放行6379端口，
    所以需要在Linux系统的防火墙中放行6380和6381端口或者关闭Linux系统的防火墙
+
+有一个快速修改配置信息的命令
+* sed -i 's/^port 6379$/port 6383/; s|^dir \./|dir /usr/local/src/redis-6.2.6/data/6383|' redis-6383.conf
+* 批量修改的命令:
+* printf '%s\n' 6380 6381 6382 6383 | xargs -I{} sed -i "s/^port 6379$/port {}/; s|^dir \./|dir /usr/local/src/redis-6.2.6/data/{}|" data/{}/redis.conf
+* 表示:批量修改文件夹下的redis.conf文件，将端口号从6379改为xxxx，数据目录从./改为/usr/local/src/redis-6.2.6/data/xxxx
+* 将redis-6380.conf文件中端口号从6379改为6383，数据目录从./改为/usr/local/src/redis-6.2.6/data/6383
+port{}就是占位符，将{}中的内容替换掉
+注意！！！因为虚拟本身有多个IP，所以为了避免混乱，需要在redis.conf中指定一个实例绑定ip信息
+* 格式:replica-announce-ip 192.168.100.128
+* 使用命令修改:sed -i 'la replica-announce-ip 192.168.100.128' redis-6383.conf
+* 批量修改命令:
+* printf '%s\n' data/6380 data/6381 data/6382 data/6383 | xargs -t -I{}  sed -i '$a replica-announce-ip 192.168.100.128' {}/redis.conf
+* 表示:批量修改7001、7002、7003三个文件夹下的redis.conf文件，将replica-announce-ip 192.168.100.128添加到文件末尾中
+使用cat 7001/redis.conf命令可以查看配置信息
 
 * 然后在Redis配置类中再写几个RedissonClient的@Bean对象
 * 方法名要不一样
