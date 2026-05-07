@@ -48,7 +48,7 @@
 * @TableField:指定表中的普通字段信息
 * 注意！！！即使变量名和字段名一致，
 * 如果变量名是以is开头，且是布尔类型，
-* 那么经过反射后，字段名会自动去掉is，导致查询结果为false，这种就业需要添加@TableField("is_xxx")
+* 那么经过反射后，字段名会自动去掉is，导致查询结果为false，这种就也需要添加@TableField("is_xxx")
 * 如果变量名是SQL语句中的关键词，例如:order、limit等。为了防止冲突，需要添加@TableField("`order`"),还要加上反义字符`
 * 如果某个变量不是数据库字段，需要添加@TableField(exist = false)，标记这个不是数据库字段
 *
@@ -64,7 +64,7 @@
 *     cache-enabled:false 是否开启二级缓存功能，默认关闭
 *   global-config:
 *     db-config:
-*        id-type:assign_id 默认主键为雪花算法
+*        id-type:assign_id 这个是默认主键为雪花算法
 *        update-strategy: not——null 默认更新策略，只更新非空字段
 * 注意！！！
 * 虽然全局配置的id-type是雪花算法。但是如果添加了注解，还是使用注解的配置，优先级高于全局配置
@@ -188,6 +188,16 @@
 * updateById(T entity):根据Id更新对象，底层调用baseMapper.updateById(entity)
 * update(T entity,Wrapper<T> wrapper):根据Wrapper条件更新对象，底层调用baseMapper.update(entity,wrapper)
 * updateBatchById(Collection<T> entityList):批量更新对象，底层调用baseMapper.updateBatchById(entityList)
+* 注意！！！
+* UpdateById()方法会根据对象中的Id值进行更新，将实体类的属性值赋值给数据库中该id的对象。
+* 假设Id=100,shopping_cart表的数据。生成的SQL:
+  UPDATE shopping_cart
+   SET user_id = ?,
+    product_id = ?,
+    number = ?,           -- 这里的会更新为实体对象参数的属性的值
+    update_time = ?
+            WHERE id = 100
+*
 *
 * 查询:
 * 如果是查询一个对象使用get开头的方法，返回值为一个对象
@@ -424,9 +434,10 @@ saveBatch 已优化 = 发一条超长短信说完所有事
  /*
  * 对于表示用数字表示状态的情况，如果硬记这些数字和状态之间的对应关系，那么会很麻烦，
  * 可以使用枚举类来处理，枚举类中定义了多个枚举值/项，每个枚举值都表示一种状态，
+ * 枚举类（enum）:用来定义一组固定的常量
  * 例如:用1表示正常，2表示冻结
  * public enum UserStatus {//枚举类
- *  NORMAL(1, "正常"),
+ *  NORMAL(1, "正常"),//枚举常量 ，包含枚举值和枚举值描述
  *  FROZEN(2, "冻结");
  * private final int value;
  * private final String desc;
@@ -435,6 +446,109 @@ saveBatch 已优化 = 发一条超长短信说完所有事
  * this.value = value;}
  *  this.desc = desc;
  * }
+ * 可以使用UserStatus status来定义一个枚举类型的变量
+ * 例如:
+ * Userstatus status = UserStatus.NORMAL; // 直接使用枚举常量赋值
+ * system.out.println(status.value); // 输出枚举值 1
+ * system.out.println(status.desc); // 输出枚举值描述 "正常"
+ * if (status == UserStatus.NORMAL) {
+ *   system.out.println("用户正常");
+ * }
  *
+ * 问题:使用的是枚举类的数据，而数据库中的状态字段是Integer类型的，如何进行转换？
+ * 解决方法:使用MybatisPlus提供的枚举处理器功能，
+ * 第一步:将对应数据库中的状态字段的类型的，枚举类的枚举字段上添加注解@EnumValue
+ * 这样MybatisPlus就会自动将枚举值转换为数据库中的Integer值进行存储，查询时也会自动将数据库中的Integer值转换为枚举值进行返回
+ *
+ * 第二步:要枚举处理器功能生效,需要在application.yml中添加如下配置:
+ * defualt-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
+ *
+ * 注意！！！
+ * 将User和UserVO中的status字段都改为UserStatus枚举类型
+ * 默认响应的是枚举项的名称，例如"NORMAL"，而不是1。这就由SpringMVC处理的，而处理JSON格式的数据是用它里面的Jackson进行转换，
+ * 想要响应枚举值，或者枚举值描述，需要使用@JsonValue注解，想响应谁就在谁上面添加@JsonValue注解
  *
  * */
+
+//JSON处理器
+/*
+* MyBatis可以自动进行JSON格式的数据和Java的基本数据类型之间的转换，但是对于JSON格式的数据，想要拿到JSON格式的数据，
+* 需要创建一个包含Json数据中所有属性的自定义Java类，再让JSON数据转换成这个自定义Java类
+* 但是Mybatis没法让JSON数据转换成自定义Java类，因此需要使用MyBatisPlus提供的JSON处理器功能
+* 这里使用的是 JacksonTypeHandler这个JSON处理器，由SpringMVC提供，不需要添加任何依赖
+* 想要开启这个处理器，
+* 只能在要使用该处理器的字段上面添加注解@TableField(typeHandler = JacksonTypeHandler.class)
+* 但是使用了这种处理器后，
+* 就会出现一个问题对象嵌套了对象的情况。此时需要使用ResultMap通过封装来解决这个问题，但是麻烦。
+* 可以在类上使用TableName(value="user",autoResultMap = true)来开启自动ResultMap功能，MybatisPlus会自动生成ResultMap来解决对象嵌套的问题
+* 需要给UserInfo的构造函数命名，在@AllArgsConstructor注解中@AllArgsConstructor(staticName = "of")
+*
+* 完成后，响应的数据都是info{xxxx}的形式了，而不是info{userInfo{xxxx}}的形式了
+*
+*
+* */
+
+
+//插件功能
+/*
+* 之前的分页操作都是基于PageHelper插件实现的，MybatisPlus也提供了分页插件，
+* 是基于Mybatis的拦截器实现的，把SQL语句进行拦截，再将SQL语句进行修改，再进行执行
+* 使用MybatisPlus的分页插件，不需要额外的添加插件依赖，
+* 只需要创建一个配置类，在类中的方法上添加@Bean注解，方法返回MybatisPlus的总拦截器对象
+* 使用这个拦截器对象调用addInnerInterceptor(pageInterceptor)方法，就能添加分页插件到MybatisPlus的拦截器链中
+* 例如:
+* @Configuration
+* public class MybatisPlusConfig {
+*  @Bean
+*  public MybatisPlusInterceptor mybatisPlusInterceptor() {
+* //初始化核心组件
+*  MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
+*  PaginationInnerInterceptor pageInterceptor = new PaginationInnerInterceptor(DbType.MYSQL);//初始化分页插件指定数据库类型为MySQL
+*  pageInterceptor.setOverflow(true); //当请求页码超过总页数时，自动跳转到最后一页
+*  pageInterceptor.setMaxLimit(100L); //设置单页最大记录数为100条
+*  interceptor.addInnerInterceptor(pageInterceptor);//添加分页插件到MybatisPlus的拦截器链中
+*  return interceptor;
+* }
+* }
+* 底层的原理是:
+[Controller]
+   ↓ 创建 Page(1,10)
+[Service] → userService.page(page)
+   ↓ 参数传递
+[MyBatis Plus 框架层]
+   ↓ 拦截器检测到 Page 对象
+[PaginationInnerInterceptor] → 改写 SQL：添加 LIMIT 和 COUNT
+   ↓ 执行真实数据库查询
+[数据库返回分页数据]
+   ↓ 封装结果
+[IPage<User>] ← 带 total 和 records 返回给调用方
+*
+* 接着就可以调用分页的API，可以使用Iservice提供的E page(E page,wrapper<T> queryWrapper)方法，
+* 这里的E是继承了IPage接口的任意对象，IPage的子类有Page和PageDTO，PageDTO继承了Page，通常是Page对象
+* 会发现这个方法传入的参数是Page对象，返回值也是Page对象，和PageHelper的分页方法很像，
+* 分页方法传入的参数是页码和每页记录数，返回值是一个包含分页结果的Page。
+* 传入Page对象和Wrapper对象，MybatisPlus会自动生成分页的SQL语句进行查询，并将结果封装到Page对象中返回
+*
+*
+* */
+
+//入门案例:编写一个UserController接口，实现User的分页查询
+/*
+* 请求路径为:/users/page 请求方式为GET
+* 请求参数为JSON格式，包括:pageNo页码、pageSize每页记录数、sortBy排序字段、isAsc排序方式
+* name 用户名称 status 用户状态
+* 返回值:JSON格式的分页数据，包括总记录数、总页数、记录数据
+*
+* 步骤:先想想接口怎么获取参数，将请求参数封装成Pagequery对象
+* 再用UserQuery继承PageQuery，就不需要在写一个
+* 构建分页条件:
+ Page<User> page = Page.of(userQuery.getPageNo(), userQuery.getPageSize());
+排序条件，如果没有指定排序字段，则默认按更新时间倒序
+ if (userQuery.getSortBy()==null){
+            page.addOrder(new OrderItem("update_time",false));
+  }
+ page.addOrder(new OrderItem(userQuery.getSortBy(),userQuery.isAsc()));
+ *
+ * 这里代码太多了
+ * 优化:将分页条件和查询条件分别封装成两个对象，PageQuery和PageDto
+* */
