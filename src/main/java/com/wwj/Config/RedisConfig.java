@@ -1,6 +1,9 @@
 package com.wwj.Config;
 
 import com.wwj.json.JacksonObjectMapper;
+import org.redisson.Redisson;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -27,5 +30,12 @@ public class RedisConfig {
         redisTemplate.setHashValueSerializer(jsonRedisSerializer);
         redisTemplate.afterPropertiesSet();
         return redisTemplate;
+    }
+
+    @Bean
+    public RedissonClient redissonClient() {
+     Config config = new Config();
+     config.useSingleServer().setAddress("redis://192.168.100.128:6379").setPassword("123321");
+     return Redisson.create(config);
     }
 }

@@ -15,6 +15,6 @@ import java.util.List;
 @Builder
 public class TurnoverVo {
     @DateTimeFormat(pattern = "yyyy-MM-dd")
-    private LocalDate data ;
+    private LocalDate date ;
     private BigDecimal turnover;
 }

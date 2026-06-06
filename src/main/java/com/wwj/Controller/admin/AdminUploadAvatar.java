@@ -54,4 +54,7 @@ public class AdminUploadAvatar {
 
         return Result.error(MessageConstant.UPLOAD_FAILED);
     }
+
+    // 假设从数据库获取旧链接 oldUrl 和 objectName
+
 }

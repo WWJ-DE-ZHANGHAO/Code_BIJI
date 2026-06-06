@@ -33,11 +33,21 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
-
+         <!--RabbitMQ-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
         <!--Jackson进行JSON序列化和反序列化-->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <!--Redisson-->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>3.17.6</version>
         </dependency>
 
    <!--     &lt;!&ndash; Spring Security &ndash;&gt;
@@ -109,6 +119,7 @@
             <version>3.2.1</version>
             <scope>compile</scope>
         </dependency>
+
 
         <!--JWT 令牌-->
         <dependency>

@@ -74,7 +74,7 @@ public class AdminController {
     public Result<AdminRegisterVo> register(@RequestBody AdminRegisterDto adminRegisterDto) {
         Admin register = adminService.register(adminRegisterDto);
         if (register == null) {
-            return Result.error("注册失败");
+            return Result.error("注册失败，账号已存在");
         }
 
         Map<String, Object> map = new HashMap<>();

@@ -9,6 +9,7 @@ import com.wwj.Pojo.User;
 import com.wwj.Result.Result;
 import com.wwj.Service.IMemberLevelService;
 import com.wwj.Service.UserService;
+import com.wwj.Service.impl.TokenService;
 import com.wwj.Utils.JwtUtil;
 import com.wwj.Vo.UserLoginVo;
 import com.wwj.Vo.UserRegisterVo;
@@ -16,6 +17,7 @@ import com.wwj.context.BaseContext;
 import com.wwj.properties.JwtProperties;
 import io.swagger.annotations.Api;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -34,6 +36,13 @@ public class UserController {
     @Autowired
     private IMemberLevelService memberLevelService;
 
+
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
+
+    @Autowired
+    private TokenService tokenService;
+
     //生成发送验证码
     @PostMapping("/code")
     public Result<String> code(@RequestParam("phone") String phone) throws Exception {
@@ -49,7 +58,20 @@ public class UserController {
         if (user == null){
             return Result.error("登录失败，手机号或验证码错误");
         }
-        //生成token
+        // 生成双Token
+        Map<String, String> tokens = tokenService.generateTokens(user.getId());
+
+        UserLoginVo userLoginVo = UserLoginVo.builder()
+                .username(user.getUsername())
+                .avatar(user.getAvatar())
+                .accessToken(tokens.get("accessToken"))
+                .refreshToken(tokens.get("refreshToken"))
+                .expiresIn(tokens.get("expiresIn"))
+                .build();
+
+        return Result.success(userLoginVo);
+
+    /*    //生成token
         Map<String, Object> map =new  HashMap<>();
         map.put(JwtClaimsConstant.USER_ID,user.getId());
         String token = JwtUtil.createJWT(jwtProperties.getUserSecretKey(), jwtProperties.getUserTtl(), map);
@@ -58,7 +80,7 @@ public class UserController {
                 .avatar(user.getAvatar())
                 .token(token)
                 .build();
-        return Result.success(userLoginVo);
+        return Result.success(userLoginVo);*/
     }
     //用户注册
     @PostMapping("/register")
@@ -90,5 +112,12 @@ public class UserController {
         Long memberLevelId = userService.getById(userId).getMemberLevelId();
         MemberLevel MM = memberLevelService.getById(memberLevelId);
         return Result.success(MM);
+    }
+
+    //退出登录
+    @PostMapping("/logout")
+    public Result<String> logout(@RequestHeader(value = "refresh-token", required = false) String refreshToken) {
+        tokenService.logout(refreshToken);
+        return Result.success("退出成功");
     }
 }

@@ -119,6 +119,12 @@ public class HomeController {
         return Result.success(UA);
     }
 
+    //导出数据报表
+    @GetMapping("/export")
+    public Result<String> export(){
+        return Result.success("导出成功");
+    }
+
 
 
 }

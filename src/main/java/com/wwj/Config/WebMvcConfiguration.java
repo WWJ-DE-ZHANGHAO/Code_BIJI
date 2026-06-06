@@ -3,6 +3,7 @@ package com.wwj.Config;
 
 import com.wwj.interceptor.JwtTokenAdminInterceptor;
 import com.wwj.interceptor.JwtTokenUserInterceptor;
+import com.wwj.interceptor.UserRefreshTokenInterceptor;
 import com.wwj.json.JacksonObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,9 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
     @Autowired
     private JwtTokenUserInterceptor jwtTokenUserInterceptor;
 
+    @Autowired
+    private UserRefreshTokenInterceptor userRefreshTokenInterceptor;
+
     /**
      * 注册自定义拦截器
      * @param registry
@@ -52,7 +56,13 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
                 .addPathPatterns("/user/**")
                 .excludePathPatterns("/user/user/login")//拦截器不拦截登录接口
                 .excludePathPatterns("/user/user/code")
-                .excludePathPatterns("/user/user/register");
+                .excludePathPatterns("/user/user/register")
+                .order(1);
+
+        //UserRefreshTokenInterceptor，拦截用户端接口，实现token的刷新
+        registry.addInterceptor(userRefreshTokenInterceptor)
+                .addPathPatterns("/user/**")
+                .order(0);
 
     }
 

@@ -15,4 +15,5 @@ public class MessageConstant {
     public static final String PHONE_CODE_ERROR = "手机号/验证码错误";
     public static final String ADDRESS_INFORMATION_IS_INCOMPLETE = "地址信息不完整";
     public static final String USER_INFORMATION_IS_INCOMPLETE = "地址信息不完整";
+    public static final String PRODUCT_STOCK_NOT_ENOUGH = "商品库存不足";
 }

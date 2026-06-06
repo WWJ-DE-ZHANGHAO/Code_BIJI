@@ -13,17 +13,24 @@ import com.wwj.Vo.UserCouponJudgmentVo;
 import com.wwj.Vo.UserProductDetailVo;
 import com.wwj.context.BaseContext;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import static com.wwj.Constant.RedisConstants.PRODUCT_SHOP_KEY;
+import static com.wwj.Constant.RedisConstants.PRODUCT_SHOP_STOCK;
 
 /**
  * <p>
@@ -54,6 +61,17 @@ public class ProductController {
 
     @Autowired
     private IUserCouponRecordService couponRecordService;
+
+    @Autowired
+    private RedissonClient redissonClient;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
+
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
+
+
     //搜索框查询
     @GetMapping("/select")
     public Result<List<Product>> select(@RequestParam("keyword") String KWORD){//@RequestParam将前端的keyword参数映射到KWORD变量中
@@ -199,7 +217,7 @@ public class ProductController {
     }
 
 
-    //立即购买，直接根据商品id查询商品详情，前端展示后用户确认下单
+   /* //立即购买，直接根据商品id查询商品详情，前端展示后用户确认下单
     @GetMapping("/buy")
     public Result<UserBuyNowVo> buy(
             @RequestParam Long productId,
@@ -220,7 +238,37 @@ public class ProductController {
         userBuyNowVo.setBuy(userBuy);
 
         return Result.success(userBuyNowVo);
-    }
+    }*/
+   //立即购买，直接根据商品id查询商品详情，前端展示后用户确认下单，进行高并发处理，使用Redis加Lua脚本，防止超卖
+   @GetMapping("/buy")
+   public Result<UserBuyNowVo> buy(
+           @RequestParam Long productId,
+           @RequestParam Integer quantity,
+           @RequestParam String source){
+       String s = stringRedisTemplate.opsForValue().get(PRODUCT_SHOP_STOCK + productId);
+       int num = Integer.parseInt(s);
+       if (num<=quantity){
+           return Result.error("库存不足");
+       }
+       UserBuyNowVo userBuyNowVo = new UserBuyNowVo();
+       Product product = productService.getById(productId);
+       UserBuy userBuy = BeanUtil.copyProperties(product, UserBuy.class);
+       userBuy.setProductId( productId);
+       userBuy.setQuantity(quantity);
+       BigDecimal multiply = product.getPrice().multiply(BigDecimal.valueOf(quantity));
+       int i = multiply.compareTo(BigDecimal.valueOf(199));
+       //判断是否是特价商品，并且价格大于等于199.00，如果是，则将价格减去50
+       if (product.getIsSpecial() == 1&&i>=0) {
+           userBuyNowVo.setActivityDiscount(BigDecimal.valueOf(50));
+       }
+       userBuyNowVo.setOriginalTotal(multiply);
+       userBuyNowVo.setBuy(userBuy);
+
+       return Result.success(userBuyNowVo);
+   }
+
+
+
 
 
     //特价专区商品列表

@@ -41,23 +41,15 @@ public class JwtTokenUserInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        //1、从请求头中获取令牌
-        String token = request.getHeader(jwtProperties.getUserTokenName());
-        String Admintoken = request.getHeader(jwtProperties.getAdminTokenName());
+        Long userId = BaseContext.getCurrentId();
 
-        //2、校验令牌
-        try {
-            log.info("jwt校验:{}", token);
-            Claims claims = JwtUtil.parseJWT(jwtProperties.getUserSecretKey(), token);
-            Long userId = Long.valueOf(claims.get(JwtClaimsConstant.USER_ID).toString());
-            log.info("当前用户的id：", userId);
-            BaseContext.setCurrentId(userId);
-            //3、通过，放行
-            return true;
-        } catch (Exception ex) {
-            //4、不通过，响应401状态码
+        if (userId == null) {
+            log.debug("用户未登录，返回401");
             response.setStatus(401);
             return false;
         }
+
+        log.debug("用户 {} 已登录，放行", userId);
+        return true;
     }
 }

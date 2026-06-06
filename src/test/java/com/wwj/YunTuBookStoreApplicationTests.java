@@ -1,9 +1,21 @@
 package com.wwj;
 
+import com.wwj.Message.OrderRemindMessage;
 import com.wwj.Pojo.Product;
+import com.wwj.Pojo.Stock;
+import com.wwj.Result.Result;
+import com.wwj.Service.IProductService;
+import com.wwj.Service.IStockService;
+import com.wwj.context.BaseContext;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -12,7 +24,13 @@ import java.util.List;
 
 @SpringBootTest
 class YunTuBookStoreApplicationTests {
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
 
+    @Autowired
+    private IProductService productService;
+    @Autowired
+    private IStockService stockService;
     @Test
     void contextLoads() {
         String s = DigestUtils.md5Hex("123456");
@@ -32,5 +50,21 @@ class YunTuBookStoreApplicationTests {
 
 
     }
+
+    //预热商品信息和库存信息到Redis中
+    @Test
+    void test2() {
+        List<Product> list = productService.list();
+        for (Product product : list) {
+            stringRedisTemplate.opsForValue().set("product:id" + product.getId(), product.toString());
+        }
+        List<Stock> List = stockService.list();
+        for (Stock stock : List) {
+            stringRedisTemplate.opsForValue().set("product:stock:id" + stock.getProductId(), stock.getSaleStock().toString());
+        }
+
+
+    }
+
 
 }

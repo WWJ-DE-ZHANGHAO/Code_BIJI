@@ -18,5 +18,7 @@ import java.util.List;
 public class UserLoginVo {
     private String username;
     private String avatar;
-    private String token;
+    private String refreshToken;
+    private String expiresIn;
+    private String accessToken;
 }
