@@ -239,7 +239,7 @@ docker inspect  容器名:查看容器的详细信息
 -v  /mysql:/var/lib/mysql会被识别为一个本地目录，而不是一个数据卷
 把宿主机Mysql目录下的数据目录
 
-*案例:实现宿主机目录和Mysql数据目录、配置文件、初始化脚本的挂载
+*案例:实现宿主机目录和Mysql容器数据目录、配置文件、初始化脚本的挂载
 Mysql容器配置文件:/etc/mysql/conf.d
 Mysql数据目录:/var/lib/mysql
 Mysql容器初始化脚本:/docker-entrypoint-initdb.d  注意！！初始化脚本只有在容器创建的时候才会生效
@@ -408,7 +408,7 @@ docker network inspect 显示指定网络的信息
 //部署Java应用到Docker容器中
 /*
 *将Java应用在Idea中Package进行打包，成jar包。因为里面有dockerfile文件，
-* 直接将Target里面的jar包和dockerfile文件一起上传到虚拟机中，时间hm-server的jar包放到虚拟机root目录下
+* 直接将Target里面的jar包和dockerfile文件一起上传到虚拟机中，是将hm-server的jar包放到虚拟机root目录下
 * 创建镜像:docker build -t 镜像名称:镜像版本 .
 * 运行容器:docker run -d --name  -p 8080:8080 --network 自定义网络  镜像名称:镜像版本
 *

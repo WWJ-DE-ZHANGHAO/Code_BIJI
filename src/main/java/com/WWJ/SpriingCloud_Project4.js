@@ -128,7 +128,7 @@ PUT:/carts、POST:/carts、GET:/carts、DELETE:/carts/{id}
 *
 * */
 
-//fallback
+//fallback(降级)
 /*
 *使用线程隔离，如果线程数超过阈值，会报错，用户看到的都是错误信息，体验不是很好
 * 所以要使用熔断并使用fallback

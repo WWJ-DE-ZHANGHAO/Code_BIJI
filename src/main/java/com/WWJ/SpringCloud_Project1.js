@@ -1,3 +1,13 @@
+
+spring-boot-starter开头的，不用写版本号因为它来自 Spring Boot Parent 的依赖管理，这里是继承于父类的父类
+    因为父类中管理了spring-cloud-alibaba-dependencies和spring-cloud-dependencies的版本号，所以不用写版本号
+    所以spring-cloud-starter和spring-cloud-starter-alibaba开头的依赖也不用写版本号
+要建立父子模块之间的关系只需要在父模块的pom.xml文件中添加<packaging>pom</packaging>
+再在<modules><modules>中添加子模块的名称即可，并加上<dependencyManagement>标签，管理所有子模块可能用到的依赖及版本号，子模块引入这些依赖时就不必再写版本号了
+在子模块中通过<parent>标签引入父模块的groupId、artifactId和version
+即可建立父子模块之间的关系
+注意！！！
+子模块因为继承了父模块，所以不用加上version和groupId，父模块的groupId和version会自动传递给子模块
 //微服务
 //导入项目
 /*
@@ -100,7 +110,7 @@ Maven聚合:所有微服务都在同一个Project工程中，每个服务是这�
  *将hm-service中与商品管理相关的功能拆分到一个微服务module中，命名为item-service
  *创建三层架构的包、创建启动类、定义配置文件
  注意!!!
- *要修修改配置文件中的端口号，防止多个微服务端口号相同，导致启动失败
+ *要修改配置文件中的端口号，防止多个微服务端口号相同，导致启动失败
  * 端口:8081
  * 在配置中给服务应用起名称
  *  port: 8081
@@ -196,7 +206,7 @@ spring:
 *
 * 这里使用Spring提供的RestTemplate进行远程调用
 * 注入RestTemplate到Spring容器中
-* @Bean //直接写在启动中
+* @Bean //以下代码直接写在启动中
   public RestTemplate restTemplate() {
     return new RestTemplate();
   }
@@ -244,7 +254,7 @@ spring:
             return;
         }
  *
- * 注意！！RestTemplate发起远程调用是用问题的
+ * 注意！！RestTemplate发起远程调用是有问题的
 * */
 
 //服务治理:服务远程调用存在的问题
@@ -277,7 +287,12 @@ item-service:
 
 * */
 
-
+注意！！！！
+父工程的SpringBoot版本和SpringCloud版本要匹配，否则会导致服务注册失败
+Spring Boot	Spring Cloud 版本
+3.2.x	2023.0.x (也叫 Spring Cloud 2023.0.0)
+3.0.x - 3.1.x	2022.0.x
+2.6.x - 2.7.x	2021.0.x
 //服务治理:注册中心Nacos
 /*
 * Nacos:是目前国内企业中占比最多的注册中心组件，是阿里巴巴的产品，目前已经加入SpringCloudAlibaba中
@@ -300,7 +315,7 @@ docker run -d \
 -p 8848:8848 \    //Nacos需要3个端口，分别对应http、nacos和healthz
 -p 9848:9848 \
 -p 9849:9849 \
---restart=always \
+--restart=always \ //--restart=always 告诉 Docker：无论容器因什么原因停止（崩溃、退出、系统重启），都自动重新启动它。
 nacos/nacos-server:v2.1.0-slim
 *
 启动后，访问:http://192.168.100.128:8848/nacos/
@@ -316,8 +331,11 @@ docker run -d \
 -p 8848:8848 \
 -p 9848:9848 \
 -p 9849:9849 \
+--restart=always \
 --network WWJ \
 nacos/nacos-server:v2.1.0-slim
+还有就是要配置Mysql
+Nacos 找不到数据库连接配置。Nacos 2.x 默认需要 MySQL 来存储配置数据。否则无法登录
 //实现服务注册
 /*
 * 步骤:
@@ -343,7 +361,7 @@ nacos/nacos-server:v2.1.0-slim
 
 //实现服务发现
 /*
-* 服务调用者，需要连接nacos以拉取和订阅服务，因此服务发现的前两步和服务注册是一样(给服务调用者加上这些)，后面再加上服务调用即可
+* 服务调用者，需要连接nacos以拉取和订阅服务，因此服务发现的前两步和服务注册是一样(给服务调用者加上依赖和配置文件)，后面再加上服务调用即可
 * 使用Api获取服务信息
 * 例如:在购物车服务中需要调用商品管理服务的接口，那么就需要先通过服务发现获取到商品管理服务的地址，然后再进行远程调用、
 * private final DiscoveryClient discoveryClient;
