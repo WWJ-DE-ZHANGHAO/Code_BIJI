@@ -302,7 +302,8 @@ Spring Boot	Spring Cloud 版本
 PREFER_HOST_MODE=hostname
 MODE=standalone
 SPRING_DATASOURCE_PLATFORM=mysql
-MYSQL_SERVICE_HOST=192.168.100.128
+MYSQL_SERVICE_HOST=mysql
+//这里别写虚拟机的地址，因为这个虚拟机下会有很多容器但是mysql和nacos在同一个虚拟机且网络互通，所以这里直接写mysql的容器名称或虚拟网卡(网桥)分配的IP地址
 MYSQL_SERVICE_DB_NAME=nacos
 MYSQL_SERVICE_PORT=3306
 MYSQL_SERVICE_USER=root
