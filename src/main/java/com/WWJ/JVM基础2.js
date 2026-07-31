@@ -1,4 +1,3 @@
-//类加载器
 //类的生命周期
 /*
 *类的生命周期分为五个阶段：加载(Loading)、连接(Linking)、初始化(Initialization)、使用(Use)以及卸载(Unloading，主要是垃圾回收中用到)。
@@ -116,7 +115,7 @@ Class只包含需要用到的方法和字段，
 * major为主版本号，minor为次版本号
 * 总的就是说主版本号不能高于运行环境主版本号，如果主版本号等于最高主版本号，那么次版本号不能高于运行环境次版本号
 *
-* 2、准备阶段:给类的静态变量分配内存并设置默认初始值，
+* 2、准备阶段:给类的静态变量分配堆内存并设置默认初始值，
 * 注意！！！这里是设置默认初始值，而不是设置我们在类中定义的初始值
 * (int/short/byte类型的默认初始值是0，long类型为0L、boolean为false、String类型的默认初始值是null)
 * 例如:
@@ -146,6 +145,204 @@ Class只包含需要用到的方法和字段，
 
 //初始化阶段
 /*
+*初始化阶段会执行静态代码块中的代码，并为静态变量赋值
+*初始化阶段会执行字节码文件中的clinit(class init)方法部分的字节码指令
+*例如:
+* public class Demo{
+public static int a=1;
+static{
+* a=2;
+* }
+* public static void main(String[] args){
+* System.out.println(Demo.a);
+* }
 *
+* 将该类编译后的字节码文件中，会看到三个方法:无法构造方法、main方法、clinit初始化方法
+* clinit方法中的指令为
+* 0: iconst_1 // 将1放到操作数栈中
+* 1: putstatic #2 <Demo.a> // 将操作数栈中的最顶部的数值，赋值给常量池中的Demo类中的静态变量a。
+* 也就是常量池中编号为2的变量
+* 4: iconst_2 // 将2放到操作数栈中
+* 5: putstatic #2 <Demo.a> // 将操作数栈中的最顶部的数值，赋值给常量池中的Demo类中的静态变量a
+* 8: return
 *
+* 可以看到，clinit方法中先将1赋值给a，再将2赋值给a，最后打印出来的结果是2
+* 可以在编写一个
+* public class Demo2{
+* static{
+* a=2;
+* }
+* public static int b=1;
+* public static void main(String[] args){
+* System.out.println(Demo.a);
+* }
+* }
+查看字节码文件中clinit方法的字节码指令
+* 0: iconst_2 // 将2放到操作数栈中
+* 1: putstatic #2 <Demo.a> // 将操作数栈中的最顶部的数值，赋值给常量池中的Demo类中的静态变量a。
+* 4: iconst_1 // 将1放到操作数栈中
+* 5: putstatic #3 <Demo.b> // 将操作数栈中的最顶部的数值，赋值给常量池中的Demo类中的静态变量b。
+* 8: return
+*
+*总结:
+*clinit方法中的执行顺序和Java中的编写顺序是一样的，
+* 不会先执行静态变量的赋值，再执行静态代码块中的代码
 * */
+面试问题:
+有哪些中方式会触发类的初始化？
+1、访问一个类的静态变量或者静态方法
+注意！！！如果访问的变量是final修饰的并且等号右边是常量不会触发类的初始化
+2、调用Class.forName(全类名)方法进行创建Class对象
+3、new一个类对象时
+4、执行Main方法的当前类
+
+注意！！！
+在配置类的编辑配置中，添加虚拟参数，并在新增的的VM options中
+添加-XX:+TraceClassLoading参数，
+代码执行时就可以打印出加载并初始化的类是哪些
+
+注意！！！
+如果一个类中有多个触发类初始化的方式，那么只要第一个条件被满足，就会触发类的初始化
+执行其他条件，类就不会被再次初始化
+
+面试高频问题:
+public class Test1{
+ public static void main(String[] args){
+  System.out.println("A");
+  new Test1();
+  new Test1();
+}
+ public Test1(){
+  System.out.println("B");
+ }
+{
+ System.out.println("C");
+}
+static {
+ System.out.println("D");
+}
+
+}
+
+请问输出的结果是什么？
+查看字节码文件中clinit方法中的字节码指令为
+0: getstatic #2 <java.lang.System.out> //表示将常量池中过的System类中的静态变量out放到操作数栈中
+1: ldc #3 <java.lang.String.D> //表示将常量池中的编号为3的字符串"D"放到操作数栈中
+2: invokevirtual #4 <java.io.PrintStream.println>
+//弹出操作数栈中的两个数据，"D"和out，调用常量池中编号为4的PrintStream类中的println方法
+//调用方法 out.println("D")输出"D"
+
+main()方法中的字节码指令为
+0: getstatic #2 <java.lang.System.out> //表示将常量池中过的System类中的静态变量out放到操作数栈中
+1: ldc #3 <java.lang.String.A> //表示将常量池中的编号为3的字符串"A"放到操作数栈中
+2: invokevirtual #4 <java.io.PrintStream.println>
+//弹出操作数栈中的两个数据，"A"和out，调用常量池中编号为4的PrintStream类中的println方法
+
+init()构造方法的字节码指令为
+0 aload_0 //将局部变量表中下标为0的this对象放到操作数栈中
+1 invokespecial #5 <java.lang.Object.<init>> //调用父类Object的构造方法
+4 getstatic #2 <java.lang.System.out> //表示将常量池中过的System类中的静态变量out放到操作数栈中
+7 ldc #5 <java.lang.String.C>
+9 invokevirtual #4 <java.io.PrintStream.println>
+12 getstatic #2 <java.lang.System.out> //表示将常量池中过的System类中的静态变量out放到操作数栈中
+15 ldc #6 <java.lang.String.B>
+17 invokevirtual #4 <java.io.PrintStream.println>
+20 return
+
+
+因为先进行类的初始化，执行clinit方法，再按顺序执行类中的方法
+又因为初始化时，会先执行静态代码块中的代码，并给静态变量的赋值
+再执行main方法的代码，再执行两次构造方法中的代码
+构造方法中先执行super、再执行实例代码块、再执行构造方法中的代码
+
+因此最终的输出结果为
+D
+A
+C
+B
+C
+B
+
+注意！！！！
+当你写代码：System.out.println("D")
+编译器做两件关键事：
+解析方法签名：println(String)，得到形参数量 = 1
+生成字节码时，强制按规则生成指令：
+先压入 this (即方法的调用者out) → 再依次压入所有实参 ("D")
+最后输出 invokevirtual
+编译器保证：到达这条 invokevirtual 的时候，栈上一定已经准备好了【this + 全部参数】。
+
+
+注意！！！
+类中的已经进行初始化的成员变量和实例代码块(非静态代码块)在类被编译后，都会被放置到类中的所有构造函数中
+面试问题1:
+这样设计的原因是什么？
+设计原因：
+Java 语法要求：不管调用哪个构造器，实例代码块都必须执行
+一个类可以有多个重载构造方法。
+如果代码块独立存在，JVM 就要额外逻辑：每次 new 对象，先执行代码块再执行构造，复杂度高。
+
+编译器做简化处理（javac 的编译优化）
+最简单的实现方案：
+编译阶段，直接把代码块里面的代码，拷贝到类的每一个构造方法内部。
+
+面试问题2:
+那构造方法执行时内部的，执行顺序是怎么样的呢？
+按照Java代码的编写顺序，会将实例代码块放在super()之后，构造方法的代码之前
+已经初始化的成员变量会放在super()之后，实例代码块之前
+所以执行顺序为:
+1、先执行super()，即父类的构造方法
+3、再执行子类的成员变量的初始化
+3、再执行子类的实例代码块
+
+
+
+注意！！！
+clinit方法在以下的情况时，不会出现
+1、无静态代码块且无静态变量
+2、有静态变量的声明，但是没有对静态变量赋值
+3、静态变量进行了赋值，但是用final修饰了，这类变量会在连接阶段的准备阶段就进行初始化
+
+注意！！！
+如果有继承的类，初始化阶段会有以下情况
+1、直接访问父类的静态变量，不会触发子类的初始化
+2、子类初始化clinit调用之前，会先调用父类的clinit初始化方法
+
+面试高频问题:
+public class Demo2{
+ public static void main(String[] args){
+  new B02();
+  System.out.println(B02.a);
+ }
+}
+Class A02{
+ static int a = 0;
+ static{
+  a=1;
+ }
+}
+Class B02 extends A02{
+ static{
+  a=2;
+ }
+}
+请问输出结果是什么？
+
+答:
+因为Demo类中没有静态代码块和静态变量，所以没有clinit
+会最先执行main中的代码
+因为B02继承A02，new B02()会强制执行B02的clinit方法，
+但是执行B02的clinit方法之前，会先执行A02的clinit方法
+A02的clinit方法中会先给a赋值为0，再给a赋值为1
+B02的clinit方法中会给a赋值为2
+所以最终输出结果为2
+
+如果将new B02()注释掉，直接打印B02.a
+会直接访问继承自父类的静态变量，不会触发子类的初始化
+所以输出结果为1
+
+注意！！！
+1、如果final修饰的静态变量的赋值内容需要执行指令才能得到结果，会执行clinit进行初始化
+public static final int a = new Random().nextInt();
+2、数组的创建是不会导致数组中元素对应的类进行初始化的
+例如: Student[] students = new Student[10];
